@@ -254,6 +254,8 @@ get_ctrl_refs_old() {
 
 set_ctrl_refs() {
   refs_found=false
+  echo -e "(!) Please make sure device is charging\n"
+  sleep 4
   echo -e "(i) Checking compatibility...\n"
   update_cache
 		
