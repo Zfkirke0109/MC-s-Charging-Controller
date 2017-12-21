@@ -86,7 +86,7 @@ set_prop() {
   else
     file=$config
   fi
-    sed -i "s|^$1=.*|$1=$2|g" $file
+  sed -i "s|^$1=.*|$1=$2|g" $file
 }
 
 set_switch() {
@@ -164,7 +164,7 @@ update_cfg() {
   fi
 
   if [[ $gerror ]]; then
-    error "These values endanger battery life"
+    error "These value/values affect battery life"
   fi
   set_prop up_threshold $u
   set_prop down_threshold $d
@@ -187,7 +187,11 @@ debug() {
   debug_zip=/sdcard/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
   update_cache
 
-  $mod_dir/zip -9q "$debug_zip" $mod_dir/* -x $mod_dir/zip
+  for entry in $(find $mod_dir ! -type d); do
+    if [[ $entry != $mod_dir/zip ]]; then
+      $mod_dir/zip -9qu "$debug_zip" $entry
+    fi
+  done
   for entry in $(cat $sys_cache); do
     $mod_dir/zip -9qu "$debug_zip" $entry
   done
