@@ -196,6 +196,7 @@ else
     cp -af $INSTALLER/common/zip_arm $MODPATH/zip
   fi
   cp -af $INSTALLER/common/data $MODPATH
+  unzip -oq "$ZIPFILE" README.md -d $MODPATH/data 2>/dev/null
 
   # Handle replace folders
   for TARGET in $REPLACE; do

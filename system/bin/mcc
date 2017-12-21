@@ -190,13 +190,12 @@ test_level() {
 
 debug() {
   echo -e "(i) Gathering debugging data...\n"
-  PATH=$PATH:$mod_dir
   debug_zip=/sdcard/mcc_debug-"$device".zip
   update_cache
 
-  zip -9q "$debug_zip" $mod_dir/*
+  $mod_dir/zip -9q "$debug_zip" $mod_dir/*
   for entry in $(cat $sys_cache); do
-    zip -9qu "$debug_zip" $entry
+    $mod_dir/zip -9qu "$debug_zip" $entry
   done
 
   echo -e "- Done\n"
@@ -255,13 +254,14 @@ get_ctrl_refs_old() {
 set_ctrl_refs() {
   refs_found=false
   echo -e "(!) Please make sure device is charging\n"
-  sleep 4
+  sleep 3
   echo -e "(i) Checking compatibility...\n"
   update_cache
 		
   for uevent_ in $(grep '/uevent$' $sys_cache); do
     if (grep -Eq '^POWER_SUPPLY_CAPACITY=[0-9]+$' $uevent_); then
       if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_); then
+        set_prop uevent $uevent_
         pwd=${uevent_%/*}
 
         for ref_ in $pwd/*; do
@@ -408,9 +408,7 @@ case $1 in
 
 ## manpage
   --help)
-    cat <<-HEREDOC
-      ## manpage here ##
-HEREDOC
+    cat $data_dir/README.md
       ;;
 
 ## re-test and configure kernel references
