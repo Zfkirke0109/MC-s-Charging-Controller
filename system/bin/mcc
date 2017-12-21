@@ -396,9 +396,10 @@ case $1 in
 
 ## info
   --info)
-    echo "Charging status :- $(get_prop POWER_SUPPLY_STATUS $(uevent_f))"
-    echo "Battery level :- $(batt_level)"
-    echo -e "Battery health :- $(get_prop POWER_SUPPLY_HEALTH $(uevent_f))\n"
+    echo -e "- Battery status\n"
+    echo "-- battery level :- $(batt_level)"
+    echo "-- battery health :- $(get_prop POWER_SUPPLY_HEALTH $(uevent_f))"
+    echo -e "-- charging status :- $(get_prop POWER_SUPPLY_STATUS $(uevent_f))\n"
     echo -e "- Current settings\n"
     echo "-- up threshold :- $(up_threshold)"
     echo "-- down threshold :- $(down_threshold)"
