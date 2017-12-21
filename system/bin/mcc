@@ -66,9 +66,6 @@ config=$data_dir/settings.conf
 ver_log=$data_dir/verbose.log
 last_log=$data_dir/last_ver.log
 sys_cache=$data_dir/sys_cache.tmp
-device_info=$data_dir/device_info.inf
-mcc_version=$(sed -n s/versionCode=//p $mod_dir/module.prop)
-device="$(getprop ro.product.brand)-$(getprop ro.product.device)"
 
 # All functions are defined here
 
@@ -184,10 +181,10 @@ test_level() {
 
 debug() {
   echo -e "(i) Gathering debugging data...\n"
-  debug_zip=/sdcard/mcc_debug-"$device".zip
+  debug_zip=/sdcard/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
   update_cache
 
-  $mod_dir/zip -9q "$debug_zip" $mod_dir/*
+  $mod_dir/zip -9q "$debug_zip" $mod_dir/* -x $mod_dir/zip
   for entry in $(cat $sys_cache); do
     $mod_dir/zip -9qu "$debug_zip" $entry
   done
@@ -328,7 +325,7 @@ if ($(do_ver_logging)); then
       fi
       echo -e "(!) Verbose logging is enabled\n"
       getprop | grep 'product' >$ver_log
-      echo -e "\nmcc_version=$mcc_version\n" >>$ver_log
+      echo -e "\nmcc_version=$(get_prop versionCode $mod_dir/module.prop)\n" >>$ver_log
       set -x 2>>$ver_log
     fi
   fi
