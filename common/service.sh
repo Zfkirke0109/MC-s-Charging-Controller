@@ -20,9 +20,9 @@ switch=$(get_prop switch | awk '{print $1}')
 
 getprop | grep product >/$dinfo
 
-# Set kernel switch writable
-
 if [ $switch != not_found_yet ]; then
+
+  # Set kernel switch writable
 
   chown 0:0 $switch
   chmod 644 $switch
