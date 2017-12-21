@@ -76,26 +76,20 @@ error() {  echo -e "(!) $1\n"; exit 1;  }
 
 get_prop() {
   if [[ ! -z $2 ]]; then
-    if [[ $2 = system ]]; then
-      getprop $1
-    else
-      sed -n s/^$1=//p "$2"
-    fi
+    file=$2
   else
-    sed -n s/^$1=//p $config
+    file=$config
   fi
+  sed -n s/^$1=//p $file
 }
 
 set_prop() {
   if [[ ! -z $3 ]]; then
-    if [[ $3 = system ]]; then
-      setprop $1 $2
-    else
-      sed -i "s|^$1=.*|$1=$2|g" "$3"
-    fi
+    file=$3
   else
-    sed -i "s|^$1=.*|$1=$2|g" $config
+    file=$config
   fi
+    sed -i "s|^$1=.*|$1=$2|g" $file
 }
 
 set_switch() {
@@ -133,7 +127,7 @@ override_daemon() {
   fi
 }
 
-is_charging() {  grep -iq '_STATUS=Charging$' $(uevent_f);  }
+is_charging() {  grep -q '_STATUS=[Cc]harging$' $(uevent_f);  }
 
 uevent_f() {  get_prop uevent;  }
 
@@ -200,52 +194,6 @@ debug() {
 
   echo -e "- Done\n"
   echo -e "(!) Please upload $debug_zip to the official XDA thread\n"
-}
-
-##    unused    ##
-get_ctrl_refs_old() {
-  echo "(i) Checking compatibility...\n"
-  update_cache
-		
-  for uevent_ in $(grep '/uevent$' $sys_cache); do
-    if (grep -q '^POWER_SUPPLY_CAPACITY=[0-9]$' $uevent_); then
-      if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_); then
-        set_prop uevent $uevent_ $config
-        break
-      fi
-    fi
-  done
-
-  if [[ ! -f $(uevent_f) ]]; then
-    echo -e "(!) Unsupported device\n"
-    debug
-  fi
-
-  grep -Ev '#|^$' $mod_dir/config/ctrl_refs | while read ctrl_refs_; do
-    ctrl_ref_file=$(echo $ctrl_refs_ | awk '{print $1}')
-    ctrl_ref_ON=$(echo $ctrl_refs_ | awk '{print $2}' 2>/dev/null)
-    ctrl_ref_OFF=$(echo $ctrl_refs_ | awk '{print $3}' 2>/dev/null)
-    if (grep -q $ctrl_ref_file$ $sys_cache); then
-      grep $ctrl_ref_file $sys_cache | while read ctrl_ref_file_; do
-        if [[ -f $ctrl_ref_file_ ]]; then
-          set_switch $ctrl_ref_file_ $ctrl_ref_ON $ctrl_ref_OFF
-          switch_OFF
-          is_charging || break
-        fi
-      done
-    fi
-    is_charging || break
-  done
-
-  if (is_charging); then
-    echo -e "(!) Unsupported device\n"
-    debug
-  fi
-  switch_ON; if ! (is_charging); then
-    echo -e "(!) Unsupported device\n"
-    debug
-  fi
-  echo -e "- OK\n"
 }
 
 # This tests and sets references if compatible
@@ -387,9 +335,15 @@ if ($(do_ver_logging)); then
 fi
 
 if [[ $(uevent_f) = not_found_yet ]]; then
-  if [[ $1 != --debug || $1 != --rconf ]]; then
-    set_ctrl_refs 2>/dev/null
-  fi
+  case $1 in
+    --help           ) ;;
+    --rconf          ) ;;
+    --debug          ) ;;
+    --breset         ) ;;
+    --log            ) ;;
+    --daemon_trigger ) ;;
+    *                ) set_ctrl_refs ;;
+  esac
 fi
 
 case $1 in
