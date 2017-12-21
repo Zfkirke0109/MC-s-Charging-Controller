@@ -15,24 +15,29 @@
 
 ##### mcc [ STOP % ] [ START % ]
           :- Set thresholds ( % ) used by mcc daemon mode for stopping / starting charging
+          :- [ START % ] is optional
+          :-   Defaults :- 80 60
 
 ##### mcc [ --keep ] [ KEEP % ]
           :- Keep battery level at certain KEEP %
 
 ##### mcc [ --start ] [ % / time ]
-          :- Enable charging for given time / until certain %
-          :- Time can be 30 ( 30 seconds ),
-                         8m (  8 minutes ),
-                         2h (   2 hours  );
+          :- Enable charging for given time / until certain % 
+          :- [ % / time ] is optional
+          :-   Time can be 30 ( 30 seconds ),
+                           8m (  8 minutes ),
+                           2h (   2 hours  );
 
-##### mcc [ --stop ]
+##### mcc [ --stop ] [ % / time ]
           :- Same as [ --start ], except for charging is disabled
 
 ##### mcc [ --daemon ]
-          :- Toggle MAGISK daemon mode
+          :- Toggle MAGISK daemon mode ON/OFF
+               Default :- ON
 
 ##### mcc [ --log ]
-          :- Toggle verbose logging
+          :- Toggle verbose logging ON/OFF
+               Default :- OFF
 
 ##### mcc [ --info ]
           :- Show some useful information
