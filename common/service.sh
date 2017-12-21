@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # mcc service
-# versionCode=2017122003
+# versionCode = 2017122003
 # MCMotherEffin' @ XDA Developers
 
 # Define variables & functions
