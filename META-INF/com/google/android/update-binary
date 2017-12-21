@@ -183,6 +183,25 @@ if [ `grep_prop versionCode $INSTALLER/module.prop` -le $CVCODE ]; then
   ui_print "- Same or older detected, uninstalling"
   rm -rf $MODPATH "$BMODPATH" $MMODPATH 2>/dev/null
 else
+  set_prop() {
+    sed -i "s|$1=.*|$1=$2|g" $MODPATH/data/settings.conf
+  }
+
+  # Preserve old settings
+  if $BOOTMODE; then
+    OLDCONFIG=$BMODPATH/data/settings.conf
+  else
+    OLDCONFIG=$MODPATH/data/settings.conf
+  fi
+  if [ -f "$OLDCONFIG ]; then
+    SET1=`grep_prop daemon_mode $OLDCONFIG`
+    SET2=`grep_prop do_ver_logging $OLDCONFIG`
+    SET3=`grep_prop uevent $OLDCONFIG`
+    SET4="`grep_prop switch $OLDCONFIG`"
+    SET5=`grep_prop up_threshold $OLDCONFIG`
+    SET6=`grep_prop down_threshold $OLDCONFIG`
+  fi
+
   # Create mod paths
   rm -rf $MODPATH 2>/dev/null
   mkdir -p $MODPATH 2>/dev/null
@@ -197,6 +216,16 @@ else
   fi
   cp -af $INSTALLER/common/data $MODPATH
   unzip -oq "$ZIPFILE" README.md -d $MODPATH/data 2>/dev/null
+
+  # Set preserved settings
+  if [ ! -z "$SET1" ]; then
+    set_prop daemon_mode $SET1
+    set_prop do_ver_logging $SET2
+    set_prop uevent $SET3
+    set_prop switch "$SET4"
+    set_prop up_threshold $SET5
+    set_prop down_threshold $SET6
+  fi
 
   # Handle replace folders
   for TARGET in $REPLACE; do

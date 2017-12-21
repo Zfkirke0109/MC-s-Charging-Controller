@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # mcc service
-# versionCode = 2017122003
+# versionCode = 2017122004
 # MCMotherEffin' @ XDA Developers
 
 # Define variables & functions
@@ -20,11 +20,9 @@ switch=$(get_prop switch | awk '{print $1}')
 
 getprop | grep product >/$dinfo
 
-# Re-configure kernel references unless done
+# Set kernel switch writable
 
 if [ $switch != not_found_yet ]; then
-
-  # Set kernel switch writable
 
   chown 0:0 $switch
   chmod 644 $switch

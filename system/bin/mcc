@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 2017122003
+# versionCode = 2017122004
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether root
