@@ -194,6 +194,7 @@ else
     OLDCONFIG=$MODPATH/data/settings.conf
   fi
   if [ -f "$OLDCONFIG" ]; then
+    ui_print "- Backing up old settings"
     SET1=`grep_prop daemon_mode $OLDCONFIG`
     SET2=`grep_prop do_ver_logging $OLDCONFIG`
     SET3=`grep_prop uevent $OLDCONFIG`
@@ -225,6 +226,7 @@ else
     set_prop switch "$SET4"
     set_prop up_threshold $SET5
     set_prop down_threshold $SET6
+    ui_print "- Old settings restored"
   fi
 
   # Handle replace folders
