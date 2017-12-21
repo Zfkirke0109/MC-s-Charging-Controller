@@ -193,7 +193,7 @@ else
   else
     OLDCONFIG=$MODPATH/data/settings.conf
   fi
-  if [ -f "$OLDCONFIG ]; then
+  if [ -f "$OLDCONFIG" ]; then
     SET1=`grep_prop daemon_mode $OLDCONFIG`
     SET2=`grep_prop do_ver_logging $OLDCONFIG`
     SET3=`grep_prop uevent $OLDCONFIG`
