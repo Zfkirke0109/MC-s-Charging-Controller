@@ -67,8 +67,8 @@
 
 ##### Note :- If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
 
-** -- Changelog
+### Changelog
 
-***** 2017.12.22-2
+##### 2017.12.22-2
 
-*   -- Initial version ( all good )
+*  -- Initial version ( all good )
