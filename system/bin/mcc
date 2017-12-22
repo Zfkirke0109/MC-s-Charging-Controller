@@ -38,7 +38,11 @@ done
 
 # Detect whether A/B device
 
-if [[ -d /system_root ]]; then system=/system_root/system; else system=/system; fi
+if [[ -d /system_root ]]; then
+  system=/system_root/system
+else
+  system=/system
+fi
 
 # Detect MAGISK mountpoint
 
@@ -95,11 +99,12 @@ set_prop() {
 }
 
 test_level() {
-  if ! (echo $1 | grep -Eq '^[0-9]+$'); then
+  if (echo $1 | grep -Eq '^[0-9]+$'); then
+    if [[ $1 -lt 0 || $1 -gt 100 ]]; then
+      error "$1 is not between 0-100"
+    fi
+  else
     error "$1 is not a number"
-  fi
-  if [[ $1 -lt 0 || $1 -gt 100 ]]; then
-    error "$1 is not between 0-100"
   fi
 }
 
@@ -121,8 +126,7 @@ toggle() {
 }
 
 set_switch() {
-  c_ON=$2; c_OFF=$3;
-  set_prop switch "$1 $c_ON $c_OFF"
+  set_prop switch "$1 $2 $3"
   chown 0:0 $1
   chmod 644 $1
   uevent_=${1%/*}/uevent
@@ -180,23 +184,27 @@ update_cfg() {
   echo -e "- New settings saved\n"
 }
 
-update_cache() {  [[ -f $sys_cache ]] || find /sys/devices /sys/module /sys/class ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache;  }
+update_cache() {
+if [[ ! -f $sys_cache ]]; then
+  find /sys/devices /sys/module /sys/class ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
+fi
+}
 
-is_charging() {  grep -q '_STATUS=[Cc]harging$' $(uevent_f);  }
+is_charging() { grep -q '_STATUS=[Cc]harging$' $(uevent_f); }
 
-uevent_f() {  get_prop uevent;  }
+uevent_f() { get_prop uevent; }
 
-switch_f() {  get_prop switch;  }
+switch_f() { get_prop switch; }
 
-daemon_mode() {  get_prop daemon_mode;  }
+daemon_mode() { get_prop daemon_mode; }
 
-do_ver_logging() {  get_prop do_ver_logging;  }
+do_ver_logging() { get_prop do_ver_logging; }
 
-batt_level() {  get_prop POWER_SUPPLY_CAPACITY $(uevent_f);  }
+batt_level() { get_prop POWER_SUPPLY_CAPACITY $(uevent_f); }
 
-up_threshold() {  get_prop up_threshold;  }
+up_threshold() { get_prop up_threshold; }
 
-down_threshold() {  get_prop down_threshold;  }
+down_threshold() { get_prop down_threshold; }
 
 # This zips debug data in /sdcard
 
@@ -235,9 +243,8 @@ set_ctrl_refs() {
     || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent_); then
       set_prop uevent $uevent_
-      pwd=${uevent_%/*}
 
-      for ref_ in $pwd/*; do
+      for ref_ in ${uevent_%/*}/*; do
 
         cont=$(cat $ref_)
         case $cont in
@@ -273,10 +280,11 @@ set_ctrl_refs() {
 
           *) continue ;;
         esac
-
+        sleep 0.5
         if ! (is_charging); then
           set_switch $ref_ $c_ON $c_OFF
-          switch_ ON; if (is_charging); then
+          switch_ ON; sleep 0.5;
+          if (is_charging); then
             refs_found=true
             break 2
           fi
@@ -363,6 +371,7 @@ if ($(do_ver_logging)); then
 fi
 
 # Set control references unless done
+
 if [[ $(uevent_f) = not_found_yet ]]; then
   case $1 in
     --log            ) ;;
@@ -378,6 +387,7 @@ fi
 case $1 in
 
 ## info
+
   --info)
     echo -e "- Battery status\n"
     echo "-- battery level :- $(batt_level)"
@@ -390,11 +400,13 @@ case $1 in
       ;;
 
 ## manpage
+
   --help)
     cat $data_dir/README.md
       ;;
 
 ## re-test and configure kernel references
+
   --rconf)
     echo -e "(i) Re-configuring kernel references...\n"
     set_ctrl_refs 2>/dev/null
@@ -402,10 +414,12 @@ case $1 in
       ;;
 
 ## debugging on demand, output in /cache
+
   --debug) debug 2>/dev/null
       ;;
 
 ## remove battery stats
+
   --breset)
     echo -e "(i) Resetting battery statistics...\n"
     rm -f /data/system/batterystats.bin
@@ -413,16 +427,19 @@ case $1 in
       ;;
 
 ## toggle verbose logging
+
   --log)
     toggle do_ver_logging "verbose logging"
       ;;
 
 ## toggle daemon mode
+
   --daemon)
     toggle daemon_mode "daemon mode"
       ;;
 
 ## keep battery level at certain level
+
   --keep)
     test_level $2
     override_daemon
@@ -445,16 +462,19 @@ case $1 in
       ;;
 
 ## enable charging (on demand/for certain %/time)
+
   --start)
     charge start $2
       ;;
 
 ## disable charging (on demand/for certain %/time)
+
   --stop)
     charge stop $2
       ;;
 
 ## trigger daemon ( MAGISK )
+
   --daemon_trigger)
     while(:); do
       if ($(daemon_mode)); then
@@ -473,6 +493,7 @@ case $1 in
       ;;
 
 ## update previous thresholds
+
   *)
     if [[ $# -eq 1 || $# -eq 2 ]]; then
       if [[ ! -z $2 ]]; then
