@@ -14,7 +14,7 @@
 
 ##### mcc [ ARG_1 ] [ ARG_2 ]
 
-##### Accepted arguments
+##### Arguments can be
 
       [ STOP % ] [ START % ]
           :- Set thresholds ( % ) used by mcc daemon mode for stopping / starting charging
@@ -66,3 +66,9 @@
 ##### For the above, connect charger / usb cable, run "mcc" and let it do the job
 
 ##### Note :- If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
+
+### Changelog
+
+##### 2017.12.22-2
+
+   -- Initial version ( all good )
