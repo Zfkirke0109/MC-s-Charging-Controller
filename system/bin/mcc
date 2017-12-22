@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 2017122004
+# versionCode = 2017122200
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether root
@@ -15,11 +15,18 @@ fi
 
 # Setup BusyBox
 
-if [ -x /data/magisk/busybox ]; then
-  alias busybox=/data/magisk/busybox
-elif ! (busybox >/dev/null); then
-  echo -e "(!) Please install BusyBox ( osm0sis' recommended )\n"
-  exit 1
+for magisk_bb in $(find /data -type f -name busybox); do
+  if (echo $magisk_bb | grep -q '.*/magisk/busybox'); then
+    alias busybox=$magisk_bb
+    break
+  fi
+  unset magisk_bb
+done
+if [ -z $magisk_bb ]; then
+  if ! (busybox >/dev/null); then
+    echo -e "(!) Please install BusyBox ( osm0sis' recommended )\n"
+    exit 1
+  fi
 fi
 for func in $(busybox --list); do
   alias $func="busybox $func"
@@ -38,7 +45,7 @@ fi
 # Detect MAGISK mountpoint
 
 for loop in /dev/block/loop*; do
-  if (losetup $loop | grep -q '/data/magisk.img'); then
+  if (losetup $loop | grep -q '.*/magisk.img'); then
     for mountpoint in $(grep "$loop " /proc/mounts | awk '{print $2}' | grep -v "^$system"); do
       if [[ ! -z $mountpoint ]]; then
         if [[ -f $mountpoint/.core/hidelist ]]; then
@@ -185,8 +192,10 @@ test_level() {
 debug() {
   echo -e "(i) Gathering debugging data...\n"
   debug_zip=/sdcard/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
+  rm -f "$debug_zip"
   update_cache
 
+  $mod_dir/zip -9q "$debug_zip" $mod_dir/module.prop
   for entry in $(find $mod_dir ! -type d); do
     if [[ $entry != $mod_dir/zip ]]; then
       $mod_dir/zip -9qu "$debug_zip" $entry

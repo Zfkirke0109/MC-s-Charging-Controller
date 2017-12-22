@@ -13,15 +13,16 @@ $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMO
 # This path should work in any cases
 TMPDIR=/dev/tmp
 MOUNTPATH=/magisk
-IMG=/data/magisk.img
 MMOUNTPATH=/dev/magisk_merge
+IMG=/data/magisk.img
 MIMG=/data/magisk_merge.img
 if $BOOTMODE; then
   MOUNTPATH=$MMOUNTPATH
   IMG=$MIMG
 fi
 INSTALLER=$TMPDIR/install
-MAGISKBIN=/data/magisk
+UTIL=`find /data -type f -name util_functions.sh | grep '.*/magisk/util_functions.sh'`
+MAGISKBIN=`dirname $UTIL`
 
 # Default permissions
 umask 022
@@ -48,7 +49,7 @@ ui_print() {
 
 require_new_magisk() {
   ui_print "***********************************"
-  ui_print "! $MAGISKBIN isn't setup properly!"
+  ui_print "! MAGISK isn't setup properly!"
   ui_print "! Please install Magisk v14.0+!"
   ui_print "***********************************"
   exit 1
@@ -57,7 +58,7 @@ require_new_magisk() {
 # Detect magisk.img mountpoint
 get_mountpoint() {
   for LOOP in 0 1 2 3 4 5 6 7; do
-    if losetup /dev/block/loop$LOOP 2>/dev/null | grep -q '/data/magisk.img'; then
+    if losetup /dev/block/loop$LOOP 2>/dev/null | grep -q '.*/magisk.img'; then
       for MPOINT in `grep "/dev/block/loop$LOOP " /proc/mounts | awk '{print $2}' | grep -v '^/system'`; do
         if [ ! -z "$MPOINT" ]; then
           if [ -f "$MPOINT/.core/hidelist" ]; then
@@ -76,9 +77,9 @@ get_mountpoint() {
 mount /data 2>/dev/null
 
 # Utility functions must exist
-[ -f $MAGISKBIN/util_functions.sh ] || require_new_magisk
+[ -f $UTIL ] || require_new_magisk
 # Load utility fuctions
-. $MAGISKBIN/util_functions.sh
+. $UTIL
 get_outfd
 
 [ -z $MAGISK_VER_CODE ] && require_new_magisk
@@ -86,6 +87,9 @@ get_outfd
 ui_print " "
 if [ $MAGISK_VER_CODE -gt 1400 ]; then
   mount_partitions
+  if ! $BOOTMODE && [ $MAGISK_VER_CODE -ge 1468 ]; then
+    IMG=/data/adb/magisk.img
+  fi
 else
   ui_print "- Mounting /system, /vendor"
   mount -o ro /system 2>/dev/null
