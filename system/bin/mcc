@@ -38,13 +38,7 @@ done
 
 # Detect whether A/B device
 
-if [[ -d /system_root ]]; then
-  system=/system_root/system
-  vendor=/system_root/vendor
-else
-  system=/system
-  vendor=/vendor
-fi
+if [[ -d /system_root ]]; then system=/system_root/system; else system=/system; fi
 
 # Detect MAGISK mountpoint
 
@@ -302,7 +296,7 @@ set_ctrl_refs() {
   fi
 }
 
-# Charging controller
+# Function for [ --start / --stop ] [ % / time ]
 
 charge() {
   if [[ $1 = start ]]; then
@@ -368,13 +362,14 @@ if ($(do_ver_logging)); then
   fi
 fi
 
+# Set control references unless done
 if [[ $(uevent_f) = not_found_yet ]]; then
   case $1 in
+    --log            ) ;;
     --help           ) ;;
     --rconf          ) ;;
     --debug          ) ;;
     --breset         ) ;;
-    --log            ) ;;
     --daemon_trigger ) ;;
     *                ) set_ctrl_refs ;;
   esac
@@ -406,7 +401,7 @@ case $1 in
     echo -e "- Done\n"
       ;;
 
-## debugging on demand
+## debugging on demand, output in /cache
   --debug) debug 2>/dev/null
       ;;
 

@@ -12,46 +12,49 @@
 
 ### Usage
 
+##### mcc [ ARG_1 ] [ ARG_2 ]
 
-##### mcc [ STOP % ] [ START % ]
+##### Accepted arguments
+
+      [ STOP % ] [ START % ]
           :- Set thresholds ( % ) used by mcc daemon mode for stopping / starting charging
           :- [ START % ] is optional
           :-   Defaults :- 80 60
 
-##### mcc [ --keep ] [ KEEP % ]
-          :- Keep battery level at certain KEEP %
+      [ --keep ] [ KEEP % ]
+          :- Keep battery level at certain [ KEEP % ]
 
-##### mcc [ --start ] [ % / time ]
+      [ --start ] [ % / time ]
           :- Enable charging for given time / until certain % 
           :- [ % / time ] is optional
           :-   Time can be 30 ( 30 seconds ),
                            8m (  8 minutes ),
                            2h (   2 hours  );
 
-##### mcc [ --stop ] [ % / time ]
+      [ --stop ] [ % / time ]
           :- Same as [ --start ], except for charging is disabled
 
-##### mcc [ --daemon ]
-          :- Toggle MAGISK daemon mode ON/OFF
+      [ --daemon ]
+          :- Toggle MAGISK daemon mode ON / OFF
                Default :- ON
 
-##### mcc [ --log ]
-          :- Toggle verbose logging ON/OFF
+      [ --log ]
+          :- Toggle verbose logging ON / OFF
                Default :- OFF
 
-##### mcc [ --info ]
+      [ --info ]
           :- Show some useful information
 
-##### mcc [ --breset ]
+      [ --breset ]
           :- Reset battery statistics
 
-##### mcc [ --rconf ]
+      [ --rconf ]
           :- Re-configure kernel references used by mcc
 
-##### mcc [ --debug ]
+      [ --debug ]
           :- Gather debugging data into /cache/mcc_debug-Device.zip
 
-##### mcc [ --help ]
+      [ --help ]
           :- Show this help message
 
 
