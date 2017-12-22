@@ -226,7 +226,7 @@ set_ctrl_refs() {
   for uevent_ in $(grep '/uevent$' $sys_cache); do
     if (grep -Eq '^POWER_SUPPLY_CAPACITY=[0-9]+$' $uevent_); then
       if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
-      || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$; then
+      || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_); then
         set_prop uevent $uevent_
         pwd=${uevent_%/*}
 
