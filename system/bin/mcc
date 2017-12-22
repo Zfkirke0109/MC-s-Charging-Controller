@@ -224,58 +224,57 @@ set_ctrl_refs() {
   update_cache
 		
   for uevent_ in $(grep '/uevent$' $sys_cache); do
-    if (grep -Eq '^POWER_SUPPLY_CAPACITY=[0-9]+$' $uevent_); then
-      if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
-      || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_); then
-        set_prop uevent $uevent_
-        pwd=${uevent_%/*}
+    if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
+    || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
+    || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent_); then
+      set_prop uevent $uevent_
+      pwd=${uevent_%/*}
 
-        for ref_ in $pwd/*; do
+      for ref_ in $pwd/*; do
 
-          cont=$(cat $ref_)
-          case $cont in
-            1) echo 0 >$ref_
-              c_ON=1; c_OFF=0; ;;
+        cont=$(cat $ref_)
+        case $cont in
+          1) echo 0 >$ref_
+            c_ON=1; c_OFF=0; ;;
 
-            0) echo 1 >$ref_
-              c_ON=0; c_OFF=1; ;;
+          0) echo 1 >$ref_
+            c_ON=0; c_OFF=1; ;;
 
-            on) echo off >$ref_
-              c_ON=on; c_OFF=off; ;;
+          on) echo off >$ref_
+            c_ON=on; c_OFF=off; ;;
 
-            off) echo on >$ref_
-              c_ON=off; c_OFF=on; ;;
+          off) echo on >$ref_
+            c_ON=off; c_OFF=on; ;;
 
-            true) echo false >$ref_
-              c_ON=true; c_OFF=false; ;;
+          true) echo false >$ref_
+            c_ON=true; c_OFF=false; ;;
 
-            false) echo true >$ref_
-              c_ON=false; c_OFF=true; ;;
+          false) echo true >$ref_
+            c_ON=false; c_OFF=true; ;;
 
-            enable) echo disable >$ref_
-              c_ON=enable; c_ON=disable; ;;
+          enable) echo disable >$ref_
+            c_ON=enable; c_ON=disable; ;;
 
-            disable) echo enable >$ref_
-              c_ON=disable; c_OFF=enable; ;;
+          disable) echo enable >$ref_
+            c_ON=disable; c_OFF=enable; ;;
 
-            enabled) echo disabled >$ref_
-              c_ON=enabled; c_OFF=disabled; ;;
+          enabled) echo disabled >$ref_
+            c_ON=enabled; c_OFF=disabled; ;;
 
-            disabled) echo enabled >$ref_
-              c_ON=disabled; c_OFF=enabled; ;;
+          disabled) echo enabled >$ref_
+            c_ON=disabled; c_OFF=enabled; ;;
 
-            *) continue ;;
-          esac
+          *) continue ;;
+        esac
 
-          if ! (is_charging); then
-            set_switch $ref_ $c_ON $c_OFF
-            switch_ ON; if (is_charging); then
-              refs_found=true
-              break 2
-            fi
+        if ! (is_charging); then
+          set_switch $ref_ $c_ON $c_OFF
+          switch_ ON; if (is_charging); then
+            refs_found=true
+            break 2
           fi
-        done
-      fi
+        fi
+      done
     fi
   done
 
