@@ -22,7 +22,7 @@ getprop | grep product >/$dinfo
 
 if [ $switch != not_found_yet ]; then
 
-  # Set kernel switch writable
+  # Make kernel switch writable
 
   chown 0:0 $switch
   chmod 644 $switch

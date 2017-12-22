@@ -84,28 +84,50 @@ error() {  echo -e "(!) $1\n"; exit 1;  }
 
 get_prop() {
   if [[ ! -z $2 ]]; then
-    file=$2
+    prop_file=$2
   else
-    file=$config
+    prop_file=$config
   fi
-  sed -n s/^$1=//p $file
+  sed -n s/^$1=//p $prop_file
 }
 
 set_prop() {
   if [[ ! -z $3 ]]; then
-    file=$3
+    prop_file=$3
   else
-    file=$config
+    prop_file=$config
   fi
-  sed -i "s|^$1=.*|$1=$2|g" $file
+  sed -i "s|^$1=.*|$1=$2|g" $prop_file
+}
+
+test_level() {
+  if ! (echo $1 | grep -Eq '^[0-9]+$'); then
+    error "$1 is not a number"
+  fi
+  if [[ $1 -lt 0 || $1 -gt 100 ]]; then
+    error "$1 is not between 0-100"
+  fi
+}
+
+test_diff() {
+  if [[ ! $1 -gt $(($2 + 5)) ]]; then
+    error "Please use [ --keep ] [ KEEP % ] for this"
+  fi
+}
+
+toggle() {
+  if ($($1)); then
+    value=false; status=OFF;
+  else
+    value=true; status=ON;
+  fi
+  echo -e "(i) Toggling $2 $status...\n"
+  set_prop $1 $value
+  echo -e "- Done\n"
 }
 
 set_switch() {
-  if [[ ! -z $2 ]]; then
-    c_ON=$2; c_OFF=$3;
-  else
-    c_ON=1;  c_OFF=0;
-  fi
+  c_ON=$2; c_OFF=$3;
   set_prop switch "$1 $c_ON $c_OFF"
   chown 0:0 $1
   chmod 644 $1
@@ -134,24 +156,6 @@ override_daemon() {
     echo -e "(!) Daemon mode overridden\n"
   fi
 }
-
-is_charging() {  grep -q '_STATUS=[Cc]harging$' $(uevent_f);  }
-
-uevent_f() {  get_prop uevent;  }
-
-switch_f() {  get_prop switch;  }
-
-daemon_mode() {  get_prop daemon_mode;  }
-
-do_ver_logging() {  get_prop do_ver_logging;  }
-
-batt_level() {  get_prop POWER_SUPPLY_CAPACITY $(uevent_f);  }
-
-up_threshold() {  get_prop up_threshold;  }
-
-down_threshold() {  get_prop down_threshold;  }
-
-update_cache() {  [[ -f $sys_cache ]] || find /sys/devices /sys/module /sys/class ! -type d 2>/dev/null | grep -v '.log$' | grep -E 'batt|charg' | sort >$sys_cache;  }
 
 update_cfg() {
   if [[ ! -z $1 && ! -z $2 ]]; then
@@ -182,14 +186,23 @@ update_cfg() {
   echo -e "- New settings saved\n"
 }
 
-test_level() {
-  if ! (echo $1 | grep -Eq '^[0-9]+$'); then
-    error "$1 is not a number"
-  fi
-  if [[ $1 -lt 0 || $1 -gt 100 ]]; then
-    error "$1 is not between 0-100"
-  fi
-}
+update_cache() {  [[ -f $sys_cache ]] || find /sys/devices /sys/module /sys/class ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache;  }
+
+is_charging() {  grep -q '_STATUS=[Cc]harging$' $(uevent_f);  }
+
+uevent_f() {  get_prop uevent;  }
+
+switch_f() {  get_prop switch;  }
+
+daemon_mode() {  get_prop daemon_mode;  }
+
+do_ver_logging() {  get_prop do_ver_logging;  }
+
+batt_level() {  get_prop POWER_SUPPLY_CAPACITY $(uevent_f);  }
+
+up_threshold() {  get_prop up_threshold;  }
+
+down_threshold() {  get_prop down_threshold;  }
 
 # This zips debug data in /sdcard
 
@@ -335,7 +348,7 @@ charge() {
   fi
 }
 
-# Disable initial logger
+# Disable logger
 
     set +x
 
@@ -406,37 +419,17 @@ case $1 in
 
 ## toggle verbose logging
   --log)
-    if ($(do_ver_logging)); then
-      value=false; status=OFF;
-    else
-      value=true; status=ON;
-    fi
-    echo -e "(i) Toggling verbose logging $status...\n"
-    set_prop do_ver_logging $value
-    echo -e "- Done\n"
+    toggle do_ver_logging "verbose logging"
       ;;
 
 ## toggle daemon mode
   --daemon)
-    if ($(daemon_mode)); then
-      value=false; status=OFF;
-    else
-      value=true; status=ON;
-    fi
-    echo -e "(i) Toggling daemon mode $status...\n"
-    set_prop daemon_mode $value
-    echo -e "- Done\n"
+    toggle daemon_mode "daemon mode"
       ;;
 
 ## keep battery level at certain level
   --keep)
-    if (echo $2 | grep -Eq '^[0-9]+$'); then
-      if [[ $2 -lt 0 || $2 -gt 100 ]]; then
-        error "Please give a level between 0-100 %"
-      fi
-    else
-      error "Please do not use alphabets"
-    fi
+    test_level $2
     override_daemon
     if ! (is_charging); then
       switch_ ON
@@ -470,11 +463,11 @@ case $1 in
   --daemon_trigger)
     while(:); do
       if ($(daemon_mode)); then
-        if [[ $(batt_level) -ge $(up_threshold) ]]; then
+        if [[ $(batt_level) -gt $(up_threshold) ]]; then
           if (is_charging); then
             switch_ OFF
           fi
-        elif [[ $(batt_level) -le $(down_threshold) ]]; then
+        elif [[ $(batt_level) -lt $(down_threshold) ]]; then
           if ! (is_charging); then
             switch_ ON
           fi
@@ -495,8 +488,10 @@ case $1 in
         error "Please don't give same levels"
       fi
       if [[ $2 && $2 -gt $1 ]]; then
+        test_diff $2 $1
         update_cfg $2 $1
       else
+        test_diff $1 $2
         update_cfg $1 $2
       fi
       if ! ($(daemon_mode)); then
