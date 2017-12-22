@@ -3,6 +3,8 @@
 #
 # Magisk Module Template Install Script
 # by topjohnwu
+# Modified by MCMotherEffin' @ XDA Developers
+# for to support newer magisk versions
 #
 ##########################################################################################
 
@@ -21,7 +23,7 @@ if $BOOTMODE; then
   IMG=$MIMG
 fi
 INSTALLER=$TMPDIR/install
-UTIL=`find /data -type f -name util_functions.sh | grep '.*/magisk/util_functions.sh'`
+UTIL=`find /data -type f -name util_functions.sh | grep '/magisk/util_functions.sh$'`
 MAGISKBIN=`dirname $UTIL`
 
 # Default permissions
@@ -49,7 +51,7 @@ ui_print() {
 
 require_new_magisk() {
   ui_print "***********************************"
-  ui_print "! MAGISK isn't setup properly!"
+  ui_print "! Magisk isn't setup properly!"
   ui_print "! Please install Magisk v14.0+!"
   ui_print "***********************************"
   exit 1
@@ -58,7 +60,7 @@ require_new_magisk() {
 # Detect magisk.img mountpoint
 get_mountpoint() {
   for LOOP in 0 1 2 3 4 5 6 7; do
-    if losetup /dev/block/loop$LOOP 2>/dev/null | grep -q '.*/magisk.img'; then
+    if losetup /dev/block/loop$LOOP 2>/dev/null | grep -q '/magisk.img$'; then
       for MPOINT in `grep "/dev/block/loop$LOOP " /proc/mounts | awk '{print $2}' | grep -v '^/system'`; do
         if [ ! -z "$MPOINT" ]; then
           if [ -f "$MPOINT/.core/hidelist" ]; then
