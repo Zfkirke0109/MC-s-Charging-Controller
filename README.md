@@ -1,6 +1,6 @@
 ### MC's Charging Controller (mcc)
 ### mcc README
-### versionCode = 2017122202
+### versionCode = 2017122203
 ### MCMotherEffin' @ XDA Developers
 
 
@@ -49,7 +49,7 @@
           :- Re-configure kernel references used by mcc
 
 ##### mcc [ --debug ]
-          :- Gather debugging data into /sdcard/mcc_debug-Device.zip
+          :- Gather debugging data into /cache/mcc_debug-Device.zip
 
 ##### mcc [ --help ]
           :- Show this help message

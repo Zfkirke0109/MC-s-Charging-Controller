@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # mcc service
-# versionCode = 2017122202
+# versionCode = 2017122203
 # MCMotherEffin' @ XDA Developers
 
 # Define variables & functions
@@ -26,10 +26,9 @@ if [ $switch != not_found_yet ]; then
 
   chown 0:0 $switch
   chmod 644 $switch
-
 fi
 
 # Run in MAGISK daemon mode
 
 export no_logging=true
-(cs --daemon_trigger) &
+(mcc --daemon_trigger) &
