@@ -391,7 +391,7 @@ case $1 in
 
 ## manpage
   --help)
-    cat $data_dir/README.md
+    cat $data_dir/README.md | grep -v '*'
       ;;
 
 ## re-test and configure kernel references
