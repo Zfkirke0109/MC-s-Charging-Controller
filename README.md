@@ -1,6 +1,6 @@
 ### MC's Charging Controller (mcc)
 ### mcc README
-### versionCode = 2017122201
+### versionCode = 2017122202
 ### MCMotherEffin' @ XDA Developers
 
 
@@ -58,8 +58,8 @@
 ### Initial setup
 
 
-##### It requires your device to be charging during first run for to detect where to hook into kernel
+##### It requires your device to be charging during first run / [ --rconf ] for to detect where to hook into kernel
 
-##### For the first run, connect charger, run "mcc" and let it do the job
+##### For the above, connect charger / usb cable, run "mcc" and let it do the job
 
-##### Note :- Please reboot after initial setup to ensure no bad thangs happen to your device ( don't worry, rebooting saves us )
+##### Note :- If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )

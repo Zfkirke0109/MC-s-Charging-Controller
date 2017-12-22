@@ -1,10 +1,10 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 2017122201
+# versionCode = 2017122202
 # MCMotherEffin' @ XDA Developers
 
-# Initial verbose logger
+# Initial verbose logger ( can't be toggled )
 
     set -x 2>/cache/mcc_debug_init.log
 
@@ -20,7 +20,7 @@ fi
 # Setup BusyBox
 
 for magisk_bb in $(find /data -type f -name busybox); do
-  if (echo $magisk_bb | grep -q '.*/magisk/busybox'); then
+  if (echo $magisk_bb | grep -q '/magisk/busybox$'); then
     alias busybox=$magisk_bb
     break
   fi
@@ -225,7 +225,8 @@ set_ctrl_refs() {
 		
   for uevent_ in $(grep '/uevent$' $sys_cache); do
     if (grep -Eq '^POWER_SUPPLY_CAPACITY=[0-9]+$' $uevent_); then
-      if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_); then
+      if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
+      || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$; then
         set_prop uevent $uevent_
         pwd=${uevent_%/*}
 
