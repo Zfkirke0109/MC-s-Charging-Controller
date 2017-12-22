@@ -155,16 +155,16 @@ update_cache() {  [[ -f $sys_cache ]] || find /sys/devices /sys/module /sys/clas
 
 update_cfg() {
   if [[ ! -z $1 && ! -z $2 ]]; then
-    if [[ $1 -gt 15 && $2 -gt 15 ]]; then
-      if [[ $1 -lt 85 && $2 -lt 85 ]]; then
+    if [[ $1 -ge 15 && $2 -ge 15 ]]; then
+      if [[ $1 -le 85 && $2 -le 85 ]]; then
         u=$1; d=$2;
       else gerror=true;
       fi
     else gerror=true;
     fi
   elif [[ ! -z $1 && -z $2 ]]; then
-    if [[ $1 -gt 15 ]]; then
-      if [[ $1 -lt 85 ]]; then
+    if [[ $1 -ge 30 ]]; then
+      if [[ $1 -le 85 ]]; then
         u=$1; d=$((u - 15));
       else gerror=true;
       fi
@@ -492,6 +492,9 @@ case $1 in
         test_level $2
       fi
       test_level $1
+      if [[ $2 -eq $1 ]]; then
+        error "Please don't give same levels"
+      fi
       if [[ $2 && $2 -gt $1 ]]; then
         update_cfg $2 $1
       else

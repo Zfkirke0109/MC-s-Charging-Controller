@@ -186,7 +186,8 @@ fi
 
 # Flash again to uninstall
 if [ `grep_prop versionCode $INSTALLER/module.prop` -le $CVCODE ]; then
-  ui_print "- Same or older detected, uninstalling"
+  ui_print "- Same or older detected"
+  ui_print "- Uninstalling"
   rm -rf $MODPATH "$BMODPATH" $MMODPATH 2>/dev/null
 else
   set_prop() {
