@@ -1,7 +1,7 @@
-####### MC's Charging Controller (mcc)
-####### mcc README
-####### versionCode = 2017122203
-####### MCMotherEffin' @ XDA Developers
+###### MC's Charging Controller (mcc)
+###### mcc README
+###### versionCode = 2017122203
+###### MCMotherEffin' @ XDA Developers
 
 
 ### Into
