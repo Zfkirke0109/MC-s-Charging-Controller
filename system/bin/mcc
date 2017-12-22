@@ -184,12 +184,6 @@ update_cfg() {
   echo -e "- New settings saved\n"
 }
 
-update_cache() {
-if [[ ! -f $sys_cache ]]; then
-  find /sys/devices /sys/module /sys/class ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
-fi
-}
-
 is_charging() { grep -q '_STATUS=[Cc]harging$' $(uevent_f); }
 
 uevent_f() { get_prop uevent; }
@@ -212,16 +206,12 @@ debug() {
   echo -e "(i) Gathering debugging data...\n"
   debug_zip=/cache/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
   rm -f "$debug_zip"
-  update_cache
 
   $mod_dir/zip -9q "$debug_zip" /cache/mcc_debug_init.log
   for entry in $(find $mod_dir ! -type d); do
     if [[ $entry != $mod_dir/zip ]]; then
       $mod_dir/zip -9qu "$debug_zip" $entry
     fi
-  done
-  for entry in $(cat $sys_cache); do
-    $mod_dir/zip -9qu "$debug_zip" $entry
   done
 
   echo -e "- Done\n"
@@ -233,11 +223,13 @@ debug() {
 
 set_ctrl_refs() {
   refs_found=false
-  echo -e "(!) Please make sure device is charging\n"
+  echo -e "(!) Please make sure the device is charging\n"
   sleep 3
   echo -e "(i) Checking compatibility...\n"
-  update_cache
-		
+  if [[ ! -f $sys_cache ]]; then
+    find /sys/devices ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
+  fi
+
   for uevent_ in $(grep '/uevent$' $sys_cache); do
     if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
@@ -280,10 +272,10 @@ set_ctrl_refs() {
 
           *) continue ;;
         esac
-        sleep 0.5
+        sleep 0.2
         if ! (is_charging); then
           set_switch $ref_ $c_ON $c_OFF
-          switch_ ON; sleep 0.5;
+          switch_ ON; sleep 0.2;
           if (is_charging); then
             refs_found=true
             break 2
@@ -298,9 +290,7 @@ set_ctrl_refs() {
   else
     set_switch not_found_yet 1 0
     set_prop uevent not_found_yet
-    echo -e "(!) Unsupported device\n"
-    debug
-    exit 1
+    error "Your kernel don't support this functionality"
   fi
 }
 
