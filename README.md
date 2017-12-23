@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 2017122203
+###### versionCode = 201712230
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -21,6 +21,10 @@
           :- [ START % ] is optional
           :-   Defaults :- 80 60
 
+      [ --shut ] [ SHUT % ]
+          :- Set threshold ( % ) used by mcc daemon mode for powering off the device
+          :-   Default  :- 20
+
       [ --keep ] [ KEEP % ]
           :- Keep battery level at certain [ KEEP % ]
 
@@ -36,11 +40,15 @@
 
       [ --daemon ]
           :- Toggle MAGISK daemon mode ON / OFF
-               Default :- ON
+          :-   Default  :- ON
+
+      [ --auto_shut ]
+          :- Toggle automatic power-off ON / OFF
+          :-   Default  :- ON
 
       [ --log ]
           :- Toggle verbose logging ON / OFF
-               Default :- OFF
+          :-   Default  :- OFF
 
       [ --info ]
           :- Show some useful information
@@ -65,14 +73,22 @@
 
 ##### For the above, connect charger / usb cable, run "mcc" and let it do the job
 
+##### Note :- Automatically powering off only works with daemon mode ON
+
 ##### Note :- If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
 
 ### Changelog
 
-##### 2017.12.22-2
+##### 2017.12.23
 
-*  -- Initial version ( all good )
+* -- Added automatic power-off functionality
+
+* -- Minor code improvements
 
 ##### 2017.12.22-3
 
 *  -- Minor update
+
+##### 2017.12.22-2
+
+*  -- Initial version ( all good )

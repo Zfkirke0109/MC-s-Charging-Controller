@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 2017122203
+# versionCode = 201712230
 # MCMotherEffin' @ XDA Developers
 
 # Initial verbose logger ( can't be toggled )
@@ -11,7 +11,7 @@
 # Detect whether root
 
 if ! (id | grep -iq 'uid=0'); then
-  echo -e "\n(!) mcc musta be root\n"
+  echo -e "\n(!) Please run mcc as root\n"
   exit 1
 else
   echo " "
@@ -21,8 +21,10 @@ fi
 
 for magisk_bb in $(find /data -type f -name busybox); do
   if (echo $magisk_bb | grep -q '/magisk/busybox$'); then
-    alias busybox=$magisk_bb
-    break
+    if [ -x $magisk_bb ]]; then
+      alias busybox=$magisk_bb
+      break
+    fi
   fi
   unset magisk_bb
 done
@@ -101,16 +103,23 @@ set_prop() {
 test_level() {
   if (echo $1 | grep -Eq '^[0-9]+$'); then
     if [[ $1 -lt 0 || $1 -gt 100 ]]; then
-      error "$1 is not between 0-100"
+      error "Please give a level between 0 - 100"
     fi
   else
-    error "$1 is not a number"
+    error "Please use only numbers"
   fi
 }
 
 test_diff() {
   if [[ ! $1 -gt $(($2 + 5)) ]]; then
     error "Please use [ --keep ] [ KEEP % ] for this"
+  fi
+}
+
+test_toggle() {
+  if ! ($($2)); then
+    mcc $1 >/dev/null
+    echo -e "(!) $3 toggled ON\n"
   fi
 }
 
@@ -127,12 +136,10 @@ toggle() {
 
 set_switch() {
   set_prop switch "$1 $2 $3"
-  chown 0:0 $1
-  chmod 644 $1
+  chown 0:0 $1; chmod 644 $1;
   uevent_=${1%/*}/uevent
   set_prop uevent $uevent_
-  chown 0:0 $uevent_
-  chmod 444 $uevent_
+  chown 0:0 $uevent_; chmod 444 $uevent_;
 }
 
 switch_() {
@@ -160,20 +167,17 @@ update_cfg() {
     if [[ $1 -ge 15 && $2 -ge 15 ]]; then
       if [[ $1 -le 85 && $2 -le 85 ]]; then
         u=$1; d=$2;
-      else gerror=true;
-      fi
-    else gerror=true;
-    fi
+      else gerror=true; fi
+    else gerror=true; fi
   elif [[ ! -z $1 && -z $2 ]]; then
-    if [[ $1 -ge 30 ]]; then
+    if [[ $1 -ge 25 ]]; then
       if [[ $1 -le 85 ]]; then
-        u=$1; d=$((u - 15));
-      else gerror=true;
-      fi
-    else gerror=true;
-    fi
+        u=$1; if [[ $1 -ge 30 ]]; then
+        d=$((u - 10)); else gerror=true; fi
+      else gerror=true; fi
+    else gerror=true; fi
   elif [[ -z $1 ]]; then
-    u=80; d=60;
+    u=70; d=60; defaults=true;
   fi
 
   if [[ $gerror ]]; then
@@ -181,7 +185,11 @@ update_cfg() {
   fi
   set_prop up_threshold $u
   set_prop down_threshold $d
-  echo -e "- New settings saved\n"
+  if [[ $defaults ]]; then
+    echo -e "- Reverted to defaults, except for shut_threshold"
+  else
+    echo -e "- New values saved\n"
+  fi
 }
 
 is_charging() { grep -q '_STATUS=[Cc]harging$' $(uevent_f); }
@@ -189,6 +197,8 @@ is_charging() { grep -q '_STATUS=[Cc]harging$' $(uevent_f); }
 uevent_f() { get_prop uevent; }
 
 switch_f() { get_prop switch; }
+
+auto_shut() { get_prop auto_shut; }
 
 daemon_mode() { get_prop daemon_mode; }
 
@@ -199,6 +209,8 @@ batt_level() { get_prop POWER_SUPPLY_CAPACITY $(uevent_f); }
 up_threshold() { get_prop up_threshold; }
 
 down_threshold() { get_prop down_threshold; }
+
+shut_threshold() { get_prop shut_threshold; }
 
 # This zips debug data in /sdcard
 
@@ -222,7 +234,6 @@ debug() {
 # ( device must be charging throughout )
 
 set_ctrl_refs() {
-  refs_found=false
   echo -e "(!) Please make sure the device is charging\n"
   sleep 3
   echo -e "(i) Checking compatibility...\n"
@@ -238,8 +249,7 @@ set_ctrl_refs() {
 
       for ref_ in ${uevent_%/*}/*; do
 
-        cont=$(cat $ref_)
-        case $cont in
+        case $(cat $ref_) in
           1) echo 0 >$ref_
             c_ON=1; c_OFF=0; ;;
 
@@ -271,8 +281,7 @@ set_ctrl_refs() {
             c_ON=disabled; c_OFF=enabled; ;;
 
           *) continue ;;
-        esac
-        sleep 0.2
+        esac; sleep 0.2
         if ! (is_charging); then
           set_switch $ref_ $c_ON $c_OFF
           switch_ ON; sleep 0.2;
@@ -285,7 +294,7 @@ set_ctrl_refs() {
     fi
   done
 
-  if ($refs_found); then
+  if [[ $refs_found ]]; then
     echo -e "- OK\n"
   else
     set_switch not_found_yet 1 0
@@ -306,7 +315,7 @@ charge() {
     if (echo $2 | grep -Eq '^[0-9]+%$'); then
       threshold=$(echo $2 | tr -d '%')
       if [[ $threshold -lt 0 || $threshold -gt 100 ]]; then
-        error "Please give a level between 0-100 %"
+        error "Please give a level between 0 - 100"
       fi
       override_daemon
       if (eval $test); then
@@ -370,6 +379,10 @@ if [[ $(uevent_f) = not_found_yet ]]; then
     --debug          ) ;;
     --breset         ) ;;
     --daemon_trigger ) ;;
+    --daemon         ) if ! ($(daemon_mode)); then
+            set_ctrl_refs; fi ;;
+    --auto_shut      ) if ! ($(auto_shut)); then
+            set_ctrl_refs; fi ;;
     *                ) set_ctrl_refs ;;
   esac
 fi
@@ -386,13 +399,14 @@ case $1 in
     echo -e "- Current settings\n"
     echo "-- up threshold :- $(up_threshold)"
     echo "-- down threshold :- $(down_threshold)"
-    echo -e "-- magisk daemon mode :- $(daemon_mode)\n"
+    echo "-- magisk daemon mode :- $(daemon_mode)"
+    echo "-- shut threshold :- $(shut_threshold)"
+    echo -e "-- automatic power-off :- $(auto_shut)\n"
       ;;
 
 ## manpage
 
-  --help)
-    cat $data_dir/README.md
+  --help) cat $data_dir/README.md
       ;;
 
 ## re-test and configure kernel references
@@ -413,19 +427,27 @@ case $1 in
   --breset)
     echo -e "(i) Resetting battery statistics...\n"
     rm -f /data/system/batterystats.bin
+    dumpsys batterysats --reset >/dev/null 2>&1
     echo -e "- Done\n"
       ;;
 
 ## toggle verbose logging
 
-  --log)
-    toggle do_ver_logging "verbose logging"
+  --log) toggle do_ver_logging "verbose logging"
+      ;;
+
+## toggle auto shut
+
+  --auto_shut)
+    toggle auto_shut "automatic power-off"
+    if ($(auto_shut)); then
+      test_toggle --daemon daemon_mode "Daemon mode"
+    fi
       ;;
 
 ## toggle daemon mode
 
-  --daemon)
-    toggle daemon_mode "daemon mode"
+  --daemon) toggle daemon_mode "daemon mode"
       ;;
 
 ## keep battery level at certain level
@@ -453,20 +475,23 @@ case $1 in
 
 ## enable charging (on demand/for certain %/time)
 
-  --start)
-    charge start $2
+  --start) charge start $2
       ;;
 
 ## disable charging (on demand/for certain %/time)
 
-  --stop)
-    charge stop $2
+  --stop) charge stop $2
       ;;
 
 ## trigger daemon ( MAGISK )
 
   --daemon_trigger)
     while(:); do
+      if ($(auto_shut)); then
+        if [[ $(batt_level) -le $(shut_threshold) ]]; then
+          poweroff
+        fi
+      fi
       if ($(daemon_mode)); then
         if [[ $(batt_level) -gt $(up_threshold) ]]; then
           if (is_charging); then
@@ -482,31 +507,45 @@ case $1 in
     done
       ;;
 
+## back to defaults
+
+  --defaults)
+    update_cfg >/dev/null
+    set_prop shut_threshold 20
+    echo -e "- Reverted all to defaults\n"
+     ;;
+
+## update auto shut threshold
+
+  --shut)
+    if (echo $2 | grep -Eq '^[0-9]+$'); then
+      if [[ $2 -gt 20 || $2 -lt 5 ]]; then
+        error "Please give a level between 5 - 20"
+      fi
+    else
+      error "Please use only numbers"
+    fi
+    set_prop shut_threshold $2
+    echo -e "- New value saved\n"
+    test_toggle --auto_shut auto_shut "Automatic power-off"
+      ;;
+
 ## update previous thresholds
 
   *)
-    if [[ $# -eq 1 || $# -eq 2 ]]; then
-      if [[ ! -z $2 ]]; then
-        test_level $2
-      fi
-      test_level $1
-      if [[ $2 -eq $1 ]]; then
-        error "Please don't give same levels"
-      fi
-      if [[ $2 && $2 -gt $1 ]]; then
-        test_diff $2 $1
-        update_cfg $2 $1
+    if [[ ! -z $2 ]]; then
+      test_level $2; test_level $1;
+      if [[ $2 -gt $1 ]]; then
+        test_diff $2 $1; update_cfg $2 $1;
       else
-        test_diff $1 $2
-        update_cfg $1 $2
+        test_diff $1 $2; update_cfg $1 $2;
       fi
-      if ! ($(daemon_mode)); then
-        mcc --daemon >/dev/null
-        echo -e "(!) Daemon mode toggled ON\n"
-      fi
+    elif [[ ! -z $1 ]]; then
+      test_level $1; update_cfg $1;
     else
-      error "Either less or more arguments given"
+      error "Please give an argument"
     fi
+    test_toggle --daemon daemon_mode "Daemon mode"
       ;;
 
 esac
