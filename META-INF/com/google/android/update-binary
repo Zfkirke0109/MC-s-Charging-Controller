@@ -114,6 +114,7 @@ echo " "
 echo "(!) Please make sure the device is charging"
 sleep 3
 echo "(i) Checking compatibility..."
+echo " "
 find /sys/devices ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
 for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
   if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $UEVENT_ \
@@ -154,7 +155,7 @@ for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
         disabled) echo enabled >$REF_
           c_ON=disabled; c_OFF=enabled; ;;
 
-        *) unset REF_; unset c_ON; unset c_OFF; continue; ;;
+        *) unset REF_ c_ON c_OFF; continue; ;;
       esac; sleep 0.2;
       if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $UEVENT_; then
         echo $c_ON >$REF_; sleep 0.2;
@@ -163,7 +164,7 @@ for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
           break 2
         fi
       fi
-      unset REF_; unset c_ON; unset c_OFF;
+      unset REF_ c_ON c_OFF;
     done
     cd /
   fi
