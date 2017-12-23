@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # mcc service
-# versionCode = 201712231
+# versionCode = 201712232
 # MCMotherEffin' @ XDA Developers
 
 # Define variables & functions
@@ -30,6 +30,6 @@ fi
 
 # Wait for proper device initialization, then run in MAGISK daemon mode
 
-sleep 30
+sleep 60
 export no_logging=true
 (mcc --daemon_trigger) &

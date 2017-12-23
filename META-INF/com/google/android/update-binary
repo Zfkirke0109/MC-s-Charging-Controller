@@ -12,16 +12,18 @@
 ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false
 $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true
 
+if ! $BOOTMODE; then
+  echo -n -e "ui_print Please install in BOOTMODE\n" >>/proc/self/fd/$2
+  echo -n -e "ui_print\n" >>/proc/self/fd/$2
+  exit 1
+fi
+
+echo " "
+
 # This path should work in any cases
 TMPDIR=/dev/tmp
-MOUNTPATH=/magisk
-MMOUNTPATH=/dev/magisk_merge
-IMG=/data/magisk.img
-MIMG=/data/magisk_merge.img
-if $BOOTMODE; then
-  MOUNTPATH=$MMOUNTPATH
-  IMG=$MIMG
-fi
+MOUNTPATH=/dev/magisk_merge
+IMG=/data/magisk_merge.img
 INSTALLER=$TMPDIR/install
 UTIL=`find /data -type f -name util_functions.sh | grep '/magisk/util_functions.sh$'`
 MAGISKBIN=`dirname $UTIL`
@@ -37,146 +39,168 @@ mkdir -p $INSTALLER
 # Environment
 ##########################################################################################
 
-OUTFD=$2
 ZIPFILE="$3"
 
-ui_print() {
-  if $BOOTMODE; then
-    echo "$1"
-  else
-    echo -n -e "ui_print $1\n" >>/proc/self/fd/$OUTFD
-    echo -n -e "ui_print\n" >>/proc/self/fd/$OUTFD
-  fi
-}
-
 require_new_magisk() {
-  ui_print "***********************************"
-  ui_print "! Magisk isn't setup properly!"
-  ui_print "! Please install Magisk v14.0+!"
-  ui_print "***********************************"
+  echo "***********************************"
+  echo "! Magisk isn't setup properly!"
+  echo "! Please install Magisk v14.0+!"
+  echo "***********************************"
   exit 1
 }
-
-# Detect magisk.img mountpoint
-get_mountpoint() {
-  for LOOP in 0 1 2 3 4 5 6 7; do
-    if losetup /dev/block/loop$LOOP 2>/dev/null | grep -q '/magisk.img$'; then
-      for MPOINT in `grep "/dev/block/loop$LOOP " /proc/mounts | awk '{print $2}' | grep -v '^/system'`; do
-        if [ ! -z "$MPOINT" ]; then
-          if [ -f "$MPOINT/.core/hidelist" ]; then
-            if [ -d "$MPOINT/.core/service.d" ]; then
-              echo "$MPOINT"
-              break 2
-            fi
-          fi
-        fi
-        unset MPOINT
-      done
-    fi
-  done
-}
-
-mount /data 2>/dev/null
 
 # Utility functions must exist
 [ -f $UTIL ] || require_new_magisk
 # Load utility fuctions
 . $UTIL
-get_outfd
 
 [ -z $MAGISK_VER_CODE ] && require_new_magisk
 
-ui_print " "
-if [ $MAGISK_VER_CODE -gt 1400 ]; then
-  mount_partitions
-  if ! $BOOTMODE && [ $MAGISK_VER_CODE -ge 1468 ]; then
-    IMG=/data/adb/magisk.img
+# Detect whether A/B device
+[ -d /system_root ] && system=/system_root/system || system=/system
+
+# Detect Magisk mountpoint
+for LOOP in 0 1 2 3 4 5 6 7; do
+  if losetup /dev/block/loop$LOOP | grep -q '/magisk.img$'; then
+    for MOUNTPOINT in `grep "/dev/block/loop$LOOP " /proc/mounts | awk '{print $2}' | grep -v "^$system"`; do
+      if [ ! -z "$MOUNTPOINT" ]; then
+        if [ -f "$MOUNTPOINT/.core/hidelist" ]; then
+          if [ -d "$MOUNTPOINT/.core/service.d" ]; then
+            break 2
+          fi
+        fi
+      fi
+      unset MOUNTPOINT
+    done
   fi
-else
-  ui_print "- Mounting /system, /vendor"
-  mount -o ro /system 2>/dev/null
-  mount -o ro /vendor 2>/dev/null
-  [ -f "/system/build.prop" ] || abort "! /system could not be mounted!"
-fi
-ui_print " "
-
-if $BOOTMODE; then
-  MOUNTPOINT=`get_mountpoint`
-  [ -z "$MOUNTPOINT" ] && abort "! Magisk is not activated!"
-fi
-
-# Detect version and architecture
-api_level_arch_detect
-
-# You can get the Android API version from $API, the CPU architecture from $ARCH
-# Useful if you are creating Android version / platform dependent mods
+done
+[ -z "$MOUNTPOINT" ] && abort "! Magisk is not activated!"
 
 # We need busybox/binaries to be setup
-$BOOTMODE && boot_actions || recovery_actions
+boot_actions
 
 ##########################################################################################
 # Preparation
 ##########################################################################################
 
 # Extract common files ###
-unzip -oq "$ZIPFILE" 'common/*' config.sh module.prop -d $INSTALLER 2>/dev/null
+unzip -oq "$ZIPFILE" 'common/*' module.prop -d $INSTALLER 2>/dev/null
 
-[ ! -f $INSTALLER/config.sh ] && abort "! Unable to extract zip file!"
-# Load configurations
-. $INSTALLER/config.sh
+[ ! -f $INSTALLER/module.prop ] && abort "! Unable to extract zip file!"
 
 # Check the min magisk version
-MIN_VER=`grep_prop template $INSTALLER/module.prop`
-[ $MAGISK_VER_CODE -ge $MIN_VER ] || require_new_magisk
-MODID=`grep_prop id $INSTALLER/module.prop`
+[ $MAGISK_VER_CODE -ge 1400 ] || require_new_magisk
+MODID=mcc
 MODPATH=$MOUNTPATH/$MODID
-if $BOOTMODE; then
-  BMODPATH="$MOUNTPOINT"/$MODID
-else
-  MMODPATH=$MMOUNTPATH/$MODID
-fi
+BMODPATH="$MOUNTPOINT"/$MODID
 
 # Print mod name
-print_modname
-ui_print " "
+echo "------------------------------------------------"
+echo "     MC's Charging Controller (mcc)"
+echo "         by MCMotherEffin' @ XDA Developers"
+echo "------------------------------------------------"
+echo " "
 
 # Please leave this message in your flashable zip for credits :)
-ui_print "******************************"
-ui_print "Powered by Magisk (@topjohnwu)"
-ui_print "******************************"
-ui_print " "
+echo "****************************************"
+echo "     Powered by Magisk (@topjohnwu)     "
+echo "****************************************"
+echo " "
 
 ##########################################################################################
 # Install
 ##########################################################################################
 
+echo "(!) Please make sure the device is charging"
+sleep 3
+echo "(i) Checking compatibility..."
+find /sys/devices ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
+for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
+  if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $UEVENT_ \
+  || grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $UEVENT_ \
+  || grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $UEVENT_; then
+    SYSDIR=${UEVENT_%/*}; cd $SYSDIR;
+
+    for REF_ in `ls`; do
+
+      case `cat $REF_` in
+        1) echo 0 >$REF_
+          c_ON=1; c_OFF=0; ;;
+
+        0) echo 1 >$REF_
+          c_ON=0; c_OFF=1; ;;
+
+        on) echo off >$REF_
+          c_ON=on; c_OFF=off; ;;
+
+        off) echo on >$REF_
+          c_ON=off; c_OFF=on; ;;
+
+        true) echo false >$REF_
+          c_ON=true; c_OFF=false; ;;
+
+        false) echo true >$REF_
+          c_ON=false; c_OFF=true; ;;
+
+        enable) echo disable >$REF_
+          c_ON=enable; c_ON=disable; ;;
+
+        disable) echo enable >$REF_
+          c_ON=disable; c_OFF=enable; ;;
+
+        enabled) echo disabled >$REF_
+          c_ON=enabled; c_OFF=disabled; ;;
+
+        disabled) echo enabled >$REF_
+          c_ON=disabled; c_OFF=enabled; ;;
+
+        *) unset REF_; unset c_ON; unset c_OFF; continue; ;;
+      esac; sleep 0.2;
+      if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $UEVENT_; then
+        echo $c_ON >$REF_; sleep 0.2;
+        if grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $UEVENT_; then
+          OK=true
+          break 2
+        fi
+      fi
+      unset REF_; unset c_ON; unset c_OFF;
+    done
+    cd /
+  fi
+  unset UEVENT_
+done
+rm -f /cache/tmpfile_mcc
+
+if [ "$OK" ]; then
+  echo "- OK"
+  echo " "
+else
+  echo "! Your kernel don't support this functionality!"
+  exit 1
+fi
+
 request_zip_size_check "$ZIPFILE"
 
 if [ -f "$IMG" ]; then
-  ui_print "- Found $IMG"
+  echo "- Found $IMG"
   image_size_check $IMG
   if [ "$reqSizeM" -gt "$curFreeM" ]; then
     newSizeM=$(((reqSizeM + curUsedM) / 32 * 32 + 64))
-    ui_print "- Resizing $IMG to ${newSizeM}M"
+    echo "- Resizing $IMG to ${newSizeM}M"
     $MAGISKBIN/magisk --resizeimg $IMG $newSizeM
   fi
 else
   newSizeM=$((reqSizeM / 32 * 32 + 64));
-  ui_print "- Creating $IMG with size ${newSizeM}M"
+  echo "- Creating $IMG with size ${newSizeM}M"
   $MAGISKBIN/magisk --createimg $IMG $newSizeM >/dev/null
 fi
 
-ui_print "- Mounting $IMG to $MOUNTPATH"
+echo "- Mounting $IMG to $MOUNTPATH"
 MAGISKLOOP=`$MAGISKBIN/magisk --mountimg $IMG $MOUNTPATH`
 is_mounted $MOUNTPATH || abort "! $IMG mount failed..."
-if ! $BOOTMODE && [ -f "$MIMG" ]; then
-  MERGELOOP=`$MAGISKBIN/magisk --mountimg $MIMG $MMOUNTPATH`
-fi
 
 # Determine if installed or not
-if [ -f "$MMODPATH/module.prop" ]; then
-  CVCODE=`grep_prop versionCode $MMODPATH/module.prop`
-elif [ -f "$MODPATH/module.prop" ]; then
+if [ -f "$MODPATH/module.prop" ]; then
   CVCODE=`grep_prop versionCode $MODPATH/module.prop`
 elif [ -f "$BMODPATH/module.prop" ]; then
   CVCODE=`grep_prop versionCode $BMODPATH/module.prop`
@@ -186,27 +210,23 @@ fi
 
 # Flash again to uninstall
 if [ `grep_prop versionCode $INSTALLER/module.prop` -le $CVCODE ]; then
-  ui_print "- Same or older detected"
-  ui_print "- Uninstalling"
-  rm -rf $MODPATH "$BMODPATH" $MMODPATH 2>/dev/null
+  echo "- Same or older detected"
+  echo "- Uninstalling"
+  rm -rf $MODPATH "$BMODPATH" 2>/dev/null
 else
   set_prop() {
     sed -i "s|$1=.*|$1=$2|g" $MODPATH/data/settings.conf
   }
 
   # Preserve old settings
-  if $BOOTMODE; then
-    OLDCONFIG=$BMODPATH/data/settings.conf
-  else
-    OLDCONFIG=$MODPATH/data/settings.conf
-  fi
+  OLDCONFIG=$BMODPATH/data/settings.conf
   if [ -f "$OLDCONFIG" ]; then
-    ui_print "- Backing up old settings"
+    echo "- Backing up old settings"
     SET1=`grep_prop auto_shut $OLDCONFIG`
     SET2=`grep_prop daemon_mode $OLDCONFIG`
     SET3=`grep_prop do_ver_logging $OLDCONFIG`
     SET4=`grep_prop uevent $OLDCONFIG`
-    SET5="`grep_prop switch $OLDCONFIG`"
+    SET5=`grep_prop switch $OLDCONFIG`
     SET6=`grep_prop up_threshold $OLDCONFIG`
     SET7=`grep_prop down_threshold $OLDCONFIG`
     SET8=`grep_prop shut_threshold $OLDCONFIG`
@@ -217,7 +237,7 @@ else
   mkdir -p $MODPATH 2>/dev/null
 
   # Copy files
-  ui_print "- Copying module files"
+  echo "- Copying module files"
   unzip -oq "$ZIPFILE" 'system/*' -d $MODPATH 2>/dev/null
   if echo $ARCH | grep -q x; then
     cp -af $INSTALLER/common/zip_x86 $MODPATH/zip
@@ -229,7 +249,7 @@ else
 
   # Set preserved settings
   if [ ! -z "$SET1" ]; then
-    ui_print "- Restoring old settings"
+    echo "- Restoring old settings"
     set_prop auto_shut $SET1
     set_prop daemon_mode $SET2
     set_prop do_ver_logging $SET3
@@ -238,36 +258,28 @@ else
     set_prop up_threshold $SET6
     set_prop down_threshold $SET7
     set_prop shut_threshold $SET8
+  else
+    set_prop uevent $UEVENT_
+    set_prop switch "$SYSDIR/$REF_ $c_ON $c_OFF"
   fi
 
-  # Handle replace folders
-  for TARGET in $REPLACE; do
-    mktouch $MODPATH$TARGET/.replace
-  done
-
-  # Auto Mount
-  $AUTOMOUNT && touch $MODPATH/auto_mount
-
-  # prop files
-  $PROPFILE && cp -af $INSTALLER/common/system.prop $MODPATH
+  # Auto mount
+  touch $MODPATH/auto_mount
 
   # Module info
   cp -af $INSTALLER/module.prop $MODPATH
 
-  if $BOOTMODE; then
-    # Update info for Magisk Manager
-    mktouch $BMODPATH/update
-    cp -af $INSTALLER/module.prop $BMODPATH
-  fi
-
-  # post-fs-data mode scripts
-  $POSTFSDATA && cp -af $INSTALLER/common/post-fs-data.sh $MODPATH
+  # Update info for Magisk Manager
+  mktouch $BMODPATH/update
+  cp -af $INSTALLER/module.prop $BMODPATH
 
   # service mode scripts
-  $LATESTARTSERVICE && cp -af $INSTALLER/common/service.sh $MODPATH
+  cp -af $INSTALLER/common/service.sh $MODPATH
 
-  ui_print "- Setting permissions"
-  set_permissions
+  echo "- Setting permissions"
+  set_perm_recursive  $MODPATH  0  0  0755  0644
+  set_perm $MODPATH/system/bin/mcc  0  0  0755
+  set_perm $MODPATH/zip  0  0  0755
 fi
 
 ##########################################################################################
@@ -276,20 +288,17 @@ fi
 
 $MAGISKBIN/magisk --umountimg $MOUNTPATH $MAGISKLOOP
 rmdir $MOUNTPATH
-$MAGISKBIN/magisk --umountimg $MMOUNTPATH $MERGELOOP 2>/dev/null
-rmdir $MMOUNTPATH 2>/dev/null
 
 # Shrink the image if possible
 image_size_check $IMG
 newSizeM=$((curUsedM / 32 * 32 + 64))
 if [ $curSizeM -gt $newSizeM ]; then
-  ui_print "- Shrinking $IMG to ${newSizeM}M"
+  echo "- Shrinking $IMG to ${newSizeM}M"
   $MAGISKBIN/magisk --resizeimg $IMG $newSizeM
 fi
 
-$BOOTMODE || recovery_cleanup
 rm -rf $TMPDIR
 
-ui_print "- Done"
-ui_print " "
+echo "- Done"
+echo " "
 exit 0

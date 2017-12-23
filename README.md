@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712230
+###### versionCode = 201712232
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -76,7 +76,7 @@
 
 ##### For the above, connect charger / usb cable, run "mcc" and let it do the job
 
-##### Note :- 
+##### Notes :- 
 
 *    --  Running just "mcc" will reset up_threshold and down_threshold to defaults
 
@@ -85,6 +85,10 @@
 *    --  If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
 
 ### Changelog
+
+##### 2017.12.23-2
+
+*  -- Added compatibility check while installing, from now on, only BOOTMODE flashing, to avoid shutting down via auto_shut functionality
 
 ##### 2017.12.23-1
 
