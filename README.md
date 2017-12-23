@@ -19,7 +19,7 @@
       [ STOP % ] [ START % ]
           :- Set thresholds ( % ) used by mcc daemon mode for stopping / starting charging
           :- [ START % ] is optional
-          :-   Defaults :- 80 60
+          :-   Defaults :- 70 60
 
       [ --shut ] [ SHUT % ]
           :- Set threshold ( % ) used by mcc daemon mode for powering off the device
@@ -50,6 +50,9 @@
           :- Toggle verbose logging ON / OFF
           :-   Default  :- OFF
 
+      [ --defaults ]
+          :- Reset all thresholds to defaults
+
       [ --info ]
           :- Show some useful information
 
@@ -73,17 +76,27 @@
 
 ##### For the above, connect charger / usb cable, run "mcc" and let it do the job
 
-##### Note :- Automatically powering off only works with daemon mode ON
+##### Note :- 
 
-##### Note :- If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
+*    --  Running just "mcc" will reset up_threshold and down_threshold to defaults
+
+*    --  Automatically powering off only works with daemon mode ON
+
+*    --  If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
 
 ### Changelog
 
+##### 2017.12.23-1
+
+*  -- Updated README
+
+*  -- Fixed some minor code
+
 ##### 2017.12.23
 
-* -- Added automatic power-off functionality
+*  -- Added automatic power-off functionality
 
-* -- Minor code improvements
+*  -- Minor code improvements
 
 ##### 2017.12.22-3
 

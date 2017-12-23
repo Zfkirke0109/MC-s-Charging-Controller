@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712230
+# versionCode = 201712231
 # MCMotherEffin' @ XDA Developers
 
 # Initial verbose logger ( can't be toggled )
@@ -163,20 +163,20 @@ override_daemon() {
 }
 
 update_cfg() {
-  if [[ ! -z $1 && ! -z $2 ]]; then
+  if [[ ! -z $2 ]]; then
     if [[ $1 -ge 15 && $2 -ge 15 ]]; then
       if [[ $1 -le 85 && $2 -le 85 ]]; then
         u=$1; d=$2;
       else gerror=true; fi
     else gerror=true; fi
-  elif [[ ! -z $1 && -z $2 ]]; then
+  elif [[ ! -z $1 ]]; then
     if [[ $1 -ge 25 ]]; then
       if [[ $1 -le 85 ]]; then
         u=$1; if [[ $1 -ge 30 ]]; then
         d=$((u - 10)); else gerror=true; fi
       else gerror=true; fi
     else gerror=true; fi
-  elif [[ -z $1 ]]; then
+  else
     u=70; d=60; defaults=true;
   fi
 
@@ -543,7 +543,7 @@ case $1 in
     elif [[ ! -z $1 ]]; then
       test_level $1; update_cfg $1;
     else
-      error "Please give an argument"
+      update_cfg
     fi
     test_toggle --daemon daemon_mode "Daemon mode"
       ;;
