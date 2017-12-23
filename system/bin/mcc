@@ -489,7 +489,9 @@ case $1 in
     while(:); do
       if ($(auto_shut)); then
         if [[ $(batt_level) -le $(shut_threshold) ]]; then
-          poweroff
+          if ! (is_charging); then
+            poweroff
+          fi
         fi
       fi
       if ($(daemon_mode)); then
