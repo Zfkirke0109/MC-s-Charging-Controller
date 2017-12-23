@@ -20,20 +20,21 @@ fi
 # Setup BusyBox
 
 for magisk_bb in $(find /data -type f -name busybox); do
+
   if (echo $magisk_bb | grep -q '/magisk/busybox$'); then
-    if [ -x $magisk_bb ]]; then
+    if [ -x "$magisk_bb" ]; then
       alias busybox=$magisk_bb
       break
     fi
   fi
   unset magisk_bb
 done
-if [ -z $magisk_bb ]; then
-  if ! (busybox >/dev/null); then
-    echo -e "(!) Please install BusyBox ( osm0sis' recommended )\n"
-    exit 1
-  fi
+
+if ! (busybox >/dev/null); then
+  echo -e "(!) Please install BusyBox ( osm0sis' recommended )\n"
+  exit 1
 fi
+
 for func in $(busybox --list); do
   alias $func="busybox $func"
 done
@@ -50,6 +51,7 @@ fi
 
 for loop in /dev/block/loop*; do
   if (losetup $loop | grep -q '/magisk.img$'); then
+
     for mountpoint in $(grep "$loop " /proc/mounts | awk '{print $2}' | grep -v "^$system"); do
       if [[ ! -z $mountpoint ]]; then
         if [[ -f $mountpoint/.core/hidelist ]]; then
@@ -129,6 +131,7 @@ toggle() {
   else
     value=true; status=ON;
   fi
+
   echo -e "(i) Toggling $2 $status...\n"
   set_prop $1 $value
   echo -e "- Done\n"
@@ -137,6 +140,7 @@ toggle() {
 set_switch() {
   set_prop switch "$1 $2 $3"
   chown 0:0 $1; chmod 644 $1;
+
   uevent_=${1%/*}/uevent
   set_prop uevent $uevent_
   chown 0:0 $uevent_; chmod 444 $uevent_;
@@ -164,12 +168,14 @@ override_daemon() {
 
 update_cfg() {
   if [[ ! -z $2 ]]; then
+
     if [[ $1 -ge 15 && $2 -ge 15 ]]; then
       if [[ $1 -le 85 && $2 -le 85 ]]; then
         u=$1; d=$2;
       else gerror=true; fi
     else gerror=true; fi
   elif [[ ! -z $1 ]]; then
+
     if [[ $1 -ge 25 ]]; then
       if [[ $1 -le 85 ]]; then
         u=$1; if [[ $1 -ge 30 ]]; then
@@ -177,14 +183,17 @@ update_cfg() {
       else gerror=true; fi
     else gerror=true; fi
   else
+
     u=70; d=60; defaults=true;
   fi
 
   if [[ $gerror ]]; then
     error "These value/values affect battery life"
   fi
+
   set_prop up_threshold $u
   set_prop down_threshold $d
+
   if [[ $defaults ]]; then
     echo -e "- Reverted to defaults, except for shut_threshold"
   else
@@ -236,12 +245,14 @@ debug() {
 set_ctrl_refs() {
   echo -e "(!) Please make sure the device is charging\n"
   sleep 3
+
   echo -e "(i) Checking compatibility...\n"
   if [[ ! -f $sys_cache ]]; then
     find /sys/devices ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
   fi
 
   for uevent_ in $(grep '/uevent$' $sys_cache); do
+
     if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent_); then
@@ -282,6 +293,7 @@ set_ctrl_refs() {
 
           *) continue ;;
         esac; sleep 0.2
+
         if ! (is_charging); then
           set_switch $ref_ $c_ON $c_OFF
           switch_ ON; sleep 0.2;
@@ -297,6 +309,7 @@ set_ctrl_refs() {
   if [[ $refs_found ]]; then
     echo -e "- OK\n"
   else
+
     set_switch not_found_yet 1 0
     set_prop uevent not_found_yet
     error "Your kernel don't support this functionality"
@@ -311,6 +324,7 @@ charge() {
   else
     turn_1=OFF; turn_2=ON; op=-gt; text=Discharging; test='is_charging';
   fi
+
   if [[ ! -z $2 ]]; then
     if (echo $2 | grep -Eq '^[0-9]+%$'); then
       threshold=$(echo $2 | tr -d '%')
@@ -321,6 +335,7 @@ charge() {
       if (eval $test); then
         switch_ $turn_1
       fi
+
       echo -e "(i) $text until $threshold%...\n"
       while eval [[ \$\(batt_level\) $op \$threshold ]]; do
         if (eval $test); then
@@ -329,18 +344,22 @@ charge() {
         sleep 30
       done
       switch_ $turn_2
+
     elif (echo $2 | grep -Eq '^[0-9]+[smh]?$'); then
       override_daemon
       if (eval $test); then
         switch_ $turn_1
       fi
+
       echo -e "(i) $text until $2...\n"
       sleep $2
       switch_ $turn_2
+
     else
       error "Please give a valid argument"
     fi
   else
+
     override_daemon
     if (eval $test); then
       switch_ $turn_1
@@ -362,6 +381,7 @@ if ($(do_ver_logging)); then
         mv -f $ver_log $last_log
       fi
       echo -e "(!) Verbose logging is enabled\n"
+
       getprop | grep 'product' >$ver_log
       echo -e "\nmcc_version=$(get_prop versionCode $mod_dir/module.prop)\n" >>$ver_log
       set -x 2>>$ver_log
@@ -379,10 +399,12 @@ if [[ $(uevent_f) = not_found_yet ]]; then
     --debug          ) ;;
     --breset         ) ;;
     --daemon_trigger ) ;;
+
     --daemon         ) if ! ($(daemon_mode)); then
             set_ctrl_refs; fi ;;
     --auto_shut      ) if ! ($(auto_shut)); then
             set_ctrl_refs; fi ;;
+
     *                ) set_ctrl_refs ;;
   esac
 fi
@@ -395,12 +417,15 @@ case $1 in
     echo -e "- Battery status\n"
     echo "-- battery level :- $(batt_level)"
     echo "-- battery health :- $(get_prop POWER_SUPPLY_HEALTH $(uevent_f))"
+
     echo -e "-- charging status :- $(get_prop POWER_SUPPLY_STATUS $(uevent_f))\n"
+
     echo -e "- Current settings\n"
     echo "-- up threshold :- $(up_threshold)"
     echo "-- down threshold :- $(down_threshold)"
+    echo -e "-- shut threshold :- $(shut_threshold)\n"
     echo "-- magisk daemon mode :- $(daemon_mode)"
-    echo "-- shut threshold :- $(shut_threshold)"
+
     echo -e "-- automatic power-off :- $(auto_shut)\n"
       ;;
 
@@ -458,8 +483,10 @@ case $1 in
     if ! (is_charging); then
       switch_ ON
     fi
+
     echo -e "(i) Battery level will be kept at $2%\n"
     while(:); do
+
       if [[ $(batt_level) -lt $2 ]]; then
         if ! (is_charging); then
           switch_ ON
@@ -487,6 +514,7 @@ case $1 in
 
   --daemon_trigger)
     while(:); do
+
       if ($(auto_shut)); then
         if [[ $(batt_level) -le $(shut_threshold) ]]; then
           if ! (is_charging); then
@@ -494,11 +522,13 @@ case $1 in
           fi
         fi
       fi
+
       if ($(daemon_mode)); then
         if [[ $(batt_level) -gt $(up_threshold) ]]; then
           if (is_charging); then
             switch_ OFF
           fi
+
         elif [[ $(batt_level) -lt $(down_threshold) ]]; then
           if ! (is_charging); then
             switch_ ON
@@ -527,6 +557,7 @@ case $1 in
     else
       error "Please use only numbers"
     fi
+
     set_prop shut_threshold $2
     echo -e "- New value saved\n"
     test_toggle --auto_shut auto_shut "Automatic power-off"
@@ -542,8 +573,10 @@ case $1 in
       else
         test_diff $1 $2; update_cfg $1 $2;
       fi
+
     elif [[ ! -z $1 ]]; then
       test_level $1; update_cfg $1;
+
     else
       update_cfg
     fi
