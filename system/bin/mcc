@@ -49,7 +49,7 @@ fi
 # Detect MAGISK mountpoint
 
 for loop in /dev/block/loop*; do
-  if (losetup $loop | grep -q '^/data/.*magisk.img$'); then
+  if (losetup $loop | grep -q '/data/.*magisk.img'); then
 
     for mountpoint in $(grep "$loop " /proc/mounts | awk '{print $2}' | grep -v "^$system"); do
       if [[ ! -z $mountpoint ]]; then
