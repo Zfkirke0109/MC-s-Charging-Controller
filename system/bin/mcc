@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712240
+# versionCode = 201712241
 # MCMotherEffin' @ XDA Developers
 
 # Initial verbose logger ( can't be toggled )
