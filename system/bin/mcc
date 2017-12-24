@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712232
+# versionCode = 201712240
 # MCMotherEffin' @ XDA Developers
 
 # Initial verbose logger ( can't be toggled )
@@ -259,6 +259,7 @@ set_ctrl_refs() {
       set_prop uevent $uevent_
 
       for ref_ in ${uevent_%/*}/*; do
+      chown 0:0 $ref_; chmod 644 $ref_;
 
         case $(cat $ref_) in
           1) echo 0 >$ref_
@@ -295,22 +296,22 @@ set_ctrl_refs() {
         esac; sleep 0.2
 
         if ! (is_charging); then
-          set_switch $ref_ $c_ON $c_OFF
-          switch_ ON; sleep 0.2;
+          echo $c_ON >$ref; sleep 0.2;
           if (is_charging); then
             refs_found=true
             break 2
           fi
         fi
+        echo $c_ON >$ref_
       done
     fi
   done
 
   if [[ $refs_found ]]; then
+    set_switch $ref_ $c_ON $c_OFF
     echo -e "- OK\n"
   else
 
-    set_switch not_found_yet 1 0
     set_prop uevent not_found_yet
     error "Your kernel don't support this functionality"
   fi

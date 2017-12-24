@@ -13,8 +13,14 @@ ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false
 $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true
 
 if ! $BOOTMODE; then
-  echo -n -e "ui_print Please install in BOOTMODE\n" >>/proc/self/fd/$2
-  echo -n -e "ui_print\n" >>/proc/self/fd/$2
+  OUTFD=$2
+  ui_print() {
+    echo -n -e "ui_print $1\n" >>/proc/self/fd/$OUTFD
+    echo -n -e "ui_print\n" >>/proc/self/fd/$OUTFD
+  }
+  ui_print " "
+  ui_print "Please install in BOOTMODE"
+  ui_print " "
   exit 1
 fi
 
@@ -123,6 +129,7 @@ for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
     SYSDIR=${UEVENT_%/*}; cd $SYSDIR;
 
     for REF_ in `ls`; do
+      chown 0:0 $REF_; chmod 644 $REF_;
 
       case `cat $REF_` in
         1) echo 0 >$REF_
@@ -155,7 +162,7 @@ for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
         disabled) echo enabled >$REF_
           c_ON=disabled; c_OFF=enabled; ;;
 
-        *) unset REF_ c_ON c_OFF; continue; ;;
+        *) continue ;;
       esac; sleep 0.2;
       if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $UEVENT_; then
         echo $c_ON >$REF_; sleep 0.2;
@@ -164,11 +171,10 @@ for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
           break 2
         fi
       fi
-      unset REF_ c_ON c_OFF;
+      echo $c_ON >$REF_
     done
     cd /
   fi
-  unset UEVENT_
 done
 rm -f /cache/tmpfile_mcc
 

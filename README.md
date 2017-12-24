@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712232
+###### versionCode = 201712240
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -82,9 +82,11 @@
 
 *    --  Automatically powering off only works with daemon mode ON
 
-*    --  If you encounter any problem after compatibility check, just reboot the device ( don't worry, it saves us )
-
 ### Changelog
+
+##### 2017.12.24
+
+*  -- Reboot no longer needed after compatibility check
 
 ##### 2017.12.23-2
 
