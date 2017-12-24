@@ -3,5 +3,4 @@
 
 # Denote all files that are truly binary and should not be modified.
 MC-s-Charging-Controller.zip binary
-common/zip_arm binary
-common/zip_x86 binary
+common/zip_* binary

@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712241
+###### versionCode = 201712242
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -84,6 +84,12 @@
 
 ### Changelog
 
+##### 2017.12.24-2
+
+*  -- Fixed wrong zip binary extraction
+
+*  -- Minor code improvements
+
 ##### 2017.12.24-1
 
 *  -- Added Changelog filtering from [ --help ]
@@ -94,7 +100,9 @@
 
 ##### 2017.12.23-2
 
-*  -- Added compatibility check while installing, from now on, only BOOTMODE flashing, to avoid shutting down via auto_shut functionality
+*  -- Added compatibility check while installing
+
+*  -- From now on, only BOOTMODE flashing, to avoid shutting down via auto_shut functionality
 
 ##### 2017.12.23-1
 
