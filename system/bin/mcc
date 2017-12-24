@@ -49,7 +49,7 @@ fi
 # Detect MAGISK mountpoint
 
 for loop in /dev/block/loop*; do
-  if (losetup $loop | grep -q '/magisk.img$'); then
+  if (losetup $loop | grep -q '^/data/.*magisk.img$'); then
 
     for mountpoint in $(grep "$loop " /proc/mounts | awk '{print $2}' | grep -v "^$system"); do
       if [[ ! -z $mountpoint ]]; then
@@ -118,9 +118,9 @@ test_diff() {
 }
 
 test_toggle() {
-  if ! ($($2)); then
-    mcc $1 >/dev/null
-    echo -e "(!) $3 toggled ON\n"
+  if ! ($($1)); then
+    set_prop $1 true
+    echo -e "(!) $2 toggled ON\n"
   fi
 }
 
@@ -146,10 +146,9 @@ set_switch() {
 }
 
 switch_() {
-  switch=$(get_prop switch)
-  c_ON=$(echo $switch | awk '{print $2}')
-  c_OFF=$(echo $switch | awk '{print $3}')
-  switch=$(echo $switch | awk '{print $1}')
+  c_ON=$(switch_f | awk '{print $2}')
+  c_OFF=$(switch_f | awk '{print $3}')
+  switch=$(switch_f | awk '{print $1}')
   
   if [[ $1 = ON ]]; then
     echo $c_ON >$switch
@@ -479,7 +478,7 @@ case $1 in
   --auto_shut)
     toggle auto_shut "automatic power-off"
     if ($(auto_shut)); then
-      test_toggle --daemon daemon_mode "Daemon mode"
+      test_toggle daemon_mode "Daemon mode"
     fi
       ;;
 
@@ -573,7 +572,7 @@ case $1 in
 
     set_prop shut_threshold $2
     echo -e "- New value saved\n"
-    test_toggle --auto_shut auto_shut "Automatic power-off"
+    test_toggle auto_shut "Automatic power-off"
       ;;
 
 ## update previous thresholds
@@ -593,7 +592,7 @@ case $1 in
     else
       update_cfg
     fi
-    test_toggle --daemon daemon_mode "Daemon mode"
+    test_toggle daemon_mode "Daemon mode"
       ;;
 
 esac
