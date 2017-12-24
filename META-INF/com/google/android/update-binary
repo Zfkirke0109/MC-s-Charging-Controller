@@ -12,6 +12,7 @@
 ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false
 $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true
 
+# Only BOOTMODE installation
 if ! $BOOTMODE; then
   OUTFD=$2
   ui_print() {
@@ -32,7 +33,7 @@ MOUNTPATH=/dev/magisk_merge
 IMG=/data/magisk_merge.img
 INSTALLER=$TMPDIR/install
 UTIL=`find /data -type f -name util_functions.sh | grep '/magisk/util_functions.sh$'`
-MAGISKBIN=`dirname $UTIL`
+MAGISKBIN=${UTIL%/*}
 
 # Default permissions
 umask 022
@@ -67,7 +68,7 @@ require_new_magisk() {
 
 # Detect Magisk mountpoint
 for LOOP in 0 1 2 3 4 5 6 7; do
-  if losetup /dev/block/loop$LOOP | grep -q '/magisk.img$'; then
+  if losetup /dev/block/loop$LOOP | grep -q '^/data.*magisk.img$'; then
     for MOUNTPOINT in `grep "/dev/block/loop$LOOP " /proc/mounts | awk '{print $2}' | grep -v "^$system"`; do
       if [ ! -z "$MOUNTPOINT" ]; then
         if [ -f "$MOUNTPOINT/.core/hidelist" ]; then
@@ -117,12 +118,13 @@ echo " "
 # Install
 ##########################################################################################
 
+# Test compatibility and set references
+# ( device must be charging throughout )
 echo "(!) Please make sure the device is charging"
 echo " "
 sleep 3
 echo "(i) Checking compatibility..."
-echo " "
-find /sys/devices ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
+find /sys/devices -type f ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
 for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
   if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $UEVENT_ \
   || grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $UEVENT_ \
@@ -179,6 +181,7 @@ for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
 done
 rm -f /cache/tmpfile_mcc
 
+# Proceed, if only found compatible
 if [ "$OK" ]; then
   echo "- OK"
   echo " "
@@ -187,8 +190,10 @@ else
   exit 1
 fi
 
+# Get required image size
 request_zip_size_check "$ZIPFILE"
 
+# Create or if found and need space, resize merge image
 if [ -f "$IMG" ]; then
   echo "- Found $IMG"
   image_size_check $IMG
@@ -203,6 +208,7 @@ else
   $MAGISKBIN/magisk --createimg $IMG $newSizeM >/dev/null
 fi
 
+# Mount the image
 echo "- Mounting $IMG to $MOUNTPATH"
 MAGISKLOOP=`$MAGISKBIN/magisk --mountimg $IMG $MOUNTPATH`
 is_mounted $MOUNTPATH || abort "! $IMG mount failed..."
@@ -222,6 +228,7 @@ if [ `grep_prop versionCode $INSTALLER/module.prop` -le $CVCODE ]; then
   echo "- Uninstalling"
   rm -rf $MODPATH "$BMODPATH" 2>/dev/null
 else
+  # Install
   set_prop() {
     sed -i "s|$1=.*|$1=$2|g" $MODPATH/data/settings.conf
   }
@@ -233,11 +240,9 @@ else
     SET1=`grep_prop auto_shut $OLDCONFIG`
     SET2=`grep_prop daemon_mode $OLDCONFIG`
     SET3=`grep_prop do_ver_logging $OLDCONFIG`
-    SET4=`grep_prop uevent $OLDCONFIG`
-    SET5=`grep_prop switch $OLDCONFIG`
-    SET6=`grep_prop up_threshold $OLDCONFIG`
-    SET7=`grep_prop down_threshold $OLDCONFIG`
-    SET8=`grep_prop shut_threshold $OLDCONFIG`
+    SET4=`grep_prop up_threshold $OLDCONFIG`
+    SET5=`grep_prop down_threshold $OLDCONFIG`
+    SET6=`grep_prop shut_threshold $OLDCONFIG`
   fi
 
   # Create mod paths
@@ -261,15 +266,12 @@ else
     set_prop auto_shut $SET1
     set_prop daemon_mode $SET2
     set_prop do_ver_logging $SET3
-    set_prop uevent $SET4
-    set_prop switch "$SET5"
-    set_prop up_threshold $SET6
-    set_prop down_threshold $SET7
-    set_prop shut_threshold $SET8
-  else
-    set_prop uevent $UEVENT_
-    set_prop switch "$SYSDIR/$REF_ $c_ON $c_OFF"
+    set_prop up_threshold $SET4
+    set_prop down_threshold $SET5
+    set_prop shut_threshold $SET6
   fi
+  set_prop uevent $UEVENT_
+  set_prop switch "$SYSDIR/$REF_ $c_ON $c_OFF"
 
   # Auto mount
   touch $MODPATH/auto_mount
@@ -305,6 +307,7 @@ if [ $curSizeM -gt $newSizeM ]; then
   $MAGISKBIN/magisk --resizeimg $IMG $newSizeM
 fi
 
+# Clean temporary files
 rm -rf $TMPDIR
 
 echo "- Done"

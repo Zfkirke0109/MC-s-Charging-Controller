@@ -138,11 +138,11 @@ toggle() {
 
 set_switch() {
   set_prop switch "$1 $2 $3"
-  chown 0:0 $1; chmod 644 $1;
+  chown 0:0 $1; chmod 0644 $1;
 
   uevent_=${1%/*}/uevent
   set_prop uevent $uevent_
-  chown 0:0 $uevent_; chmod 444 $uevent_;
+  chown 0:0 $uevent_; chmod 0644 $uevent_;
 }
 
 switch_() {
@@ -227,7 +227,7 @@ debug() {
   rm -f "$debug_zip"
 
   $mod_dir/zip -9q "$debug_zip" /cache/mcc_debug_init.log
-  for entry in $(find $mod_dir ! -type d); do
+  for entry in $(find $mod_dir -type f); do
     if [[ $entry != $mod_dir/zip ]]; then
       $mod_dir/zip -9qu "$debug_zip" $entry
     fi
@@ -246,7 +246,7 @@ set_ctrl_refs() {
 
   echo -e "(i) Checking compatibility...\n"
   if [[ ! -f $sys_cache ]]; then
-    find /sys/devices ! -type d ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
+    find /sys/devices -type f ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
   fi
 
   for uevent_ in $(grep '/uevent$' $sys_cache); do
@@ -291,7 +291,7 @@ set_ctrl_refs() {
             c_ON=disabled; c_OFF=enabled; ;;
 
           *) continue ;;
-        esac; sleep 0.2
+        esac; sleep 0.2;
 
         if ! (is_charging); then
           echo $c_ON >$ref; sleep 0.2;
