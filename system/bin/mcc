@@ -11,7 +11,7 @@
 # Detect whether root
 
 if ! (id | grep -iq 'uid=0'); then
-  echo -e "\n(!) Please run mcc as root\n"
+  echo -e "\n(!) Please run \"mcc $@\" as root\n"
   exit 1
 else
   echo " "
@@ -27,7 +27,6 @@ for magisk_bb in $(find /data -type f -name busybox); do
       break
     fi
   fi
-  unset magisk_bb
 done
 
 if ! (busybox >/dev/null); then
@@ -68,7 +67,7 @@ done
 if [[ ! -z $mountpoint ]]; then
   mod_dir=$mountpoint/mcc
 else
-  echo -e '(!) MAGISK mountpoint not found\n'
+  echo -e '(!) Could not find MAGISK mountpoint\n'
   exit 1
 fi
 
@@ -179,7 +178,7 @@ update_cfg() {
     if [[ $1 -ge 25 ]]; then
       if [[ $1 -le 85 ]]; then
         u=$1; if [[ $1 -ge 30 ]]; then
-        d=$((u - 10)); else gerror=true; fi
+        d=$((u - 10)); else d=20; fi
       else gerror=true; fi
     else gerror=true; fi
   else
@@ -201,7 +200,7 @@ update_cfg() {
   fi
 }
 
-is_charging() { grep -q '_STATUS=[Cc]harging$' $(uevent_f); }
+is_charging() { grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $(uevent_f); }
 
 uevent_f() { get_prop uevent; }
 
@@ -313,6 +312,10 @@ set_ctrl_refs() {
   else
 
     set_prop uevent not_found_yet
+    if ($(daemon_mode)); then
+      mcc --daemon >/dev/null
+      echo -e "(!) Daemon mode toggled OFF\n"
+    fi
     error "Your kernel don't support this functionality"
   fi
 }
@@ -432,7 +435,14 @@ case $1 in
 
 ## manpage
 
-  --help) cat $data_dir/README.md
+  --help)
+    cat $data_dir/README.md | while read line; do
+      if [[ $line != '### Changelog' ]]; then
+        echo "$line"
+      else
+        break
+      fi
+    done
       ;;
 
 ## re-test and configure kernel references
@@ -452,8 +462,10 @@ case $1 in
 
   --breset)
     echo -e "(i) Resetting battery statistics...\n"
-    rm -f /data/system/batterystats.bin
     dumpsys batterysats --reset >/dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+      rm -f /data/system/batterystats*.bin
+    fi
     echo -e "- Done\n"
       ;;
 

@@ -30,6 +30,5 @@ fi
 
 # Wait for proper device initialization, then run in MAGISK daemon mode
 
-sleep 60
 export no_logging=true
-(mcc --daemon_trigger) &
+(sleep 60 && mcc --daemon_trigger) &

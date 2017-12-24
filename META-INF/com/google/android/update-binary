@@ -118,6 +118,7 @@ echo " "
 ##########################################################################################
 
 echo "(!) Please make sure the device is charging"
+echo " "
 sleep 3
 echo "(i) Checking compatibility..."
 echo " "
@@ -285,8 +286,8 @@ else
 
   echo "- Setting permissions"
   set_perm_recursive  $MODPATH  0  0  0755  0644
-  set_perm $MODPATH/system/bin/mcc  0  0  0755
-  set_perm $MODPATH/zip  0  0  0755
+  set_perm_recursive $MODPATH/system/bin  0  2000  0755 0755
+  set_perm $MODPATH/zip  0  2000  0755
 fi
 
 ##########################################################################################
