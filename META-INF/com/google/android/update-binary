@@ -134,7 +134,6 @@ while read uEvent; do
     SYSDIR=${uEvent%/*}; cd $SYSDIR;
 
     for REF in `ls`; do
-#      oldLevel=`grep_prop POWER_SUPPLY_CAPACITY $uEvent`
       chown 0:0 $REF; chmod 644 $REF;
 
       case `cat $REF` in
@@ -173,12 +172,8 @@ while read uEvent; do
       if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
         echo $c_ON >$REF; sleep 0.2;
         if grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
-#          echo $c_OFF >$REF; sleep 240;
-#          echo $c_ON >$REF;  sleep 7;
-#          if [ `grep_prop POWER_SUPPLY_CAPACITY $uEvent` -le "$oldLevel" ]; then
-            OK=true
-            break 2
-#          fi
+          OK=true
+          break 2
         fi
       fi
       echo $c_ON >$REF
