@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712250
+# versionCode = 201712251
 # MCMotherEffin' @ XDA Developers
 
 # Initial verbose logger ( can't be toggled )
@@ -266,6 +266,7 @@ set_ctrl_refs() {
       ## get a boolean switch
 
       for ref_ in ${uevent_%/*}/*; do
+      old_level=$(batt_level)
       chown 0:0 $ref_; chmod 644 $ref_;
 
         case $(cat $ref_) in
@@ -302,14 +303,17 @@ set_ctrl_refs() {
           *) continue ;;
         esac; sleep 0.2;
 
-        ## test if that works,
+        ## test if that works correctly,
         ## if yes break, else continue
 
         if ! (is_charging); then
           echo $c_ON >$ref; sleep 0.2;
           if (is_charging); then
-            refs_found=true
-            break 2
+            sleep 3m; echo $c_ON >$ref_; sleep 3;
+            if [[ $(batt_level) -le $old_level ]]; then
+              refs_found=true
+              break 2
+            fi
           fi
         fi
         echo $c_ON >$ref_
