@@ -16,7 +16,7 @@ set_prop() { sed -i s/^$1=.*/$1=$2/g $config; }
 
 switch=$(get_prop switch | awk '{print $1}')
 
-# Update device info (debugging only)
+# Update device info ( debugging only )
 
 getprop | grep product >/$dinfo
 
@@ -31,4 +31,4 @@ fi
 # Wait for proper device initialization, then run in MAGISK daemon mode
 
 export no_logging=true
-(sleep 60 && mcc --daemon_trigger) &
+(sleep 90 && mcc --daemon_trigger) &

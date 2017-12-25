@@ -38,7 +38,7 @@ for func in $(busybox --list); do
   alias $func="busybox $func"
 done
 
-# Detect whether A/B device
+# Detect whether A / B device
 
 if [[ -d /system_root ]]; then
   system=/system_root/system
@@ -159,7 +159,7 @@ switch_() {
 
 override_daemon() {
   if ($(daemon_mode)); then
-    mcc --daemon >/dev/null
+    set_prop daemon_mode false
     echo -e "(!) Daemon mode overridden\n"
   fi
 }
@@ -174,10 +174,10 @@ update_cfg() {
     else gerror=true; fi
   elif [[ ! -z $1 ]]; then
 
-    if [[ $1 -ge 25 ]]; then
+    if [[ $1 -gt 20 ]]; then
       if [[ $1 -le 85 ]]; then
-        u=$1; if [[ $1 -ge 30 ]]; then
-        d=$((u - 10)); else d=20; fi
+        u=$1; if [[ $1 -ge 25 ]]; then
+        d=$((u - 10)); else d=15; fi
       else gerror=true; fi
     else gerror=true; fi
   else
@@ -219,24 +219,6 @@ down_threshold() { get_prop down_threshold; }
 
 shut_threshold() { get_prop shut_threshold; }
 
-# This zips debug data in /sdcard
-
-debug() {
-  echo -e "(i) Gathering debugging data...\n"
-  debug_zip=/cache/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
-  rm -f "$debug_zip"
-
-  $mod_dir/zip -9q "$debug_zip" /cache/mcc_debug_init.log
-  for entry in $(find $mod_dir -type f); do
-    if [[ $entry != $mod_dir/zip ]]; then
-      $mod_dir/zip -9qu "$debug_zip" $entry
-    fi
-  done
-
-  echo -e "- Done\n"
-  echo -e "(!) Please upload $debug_zip to the official XDA thread\n"
-}
-
 # This tests and sets references if compatible
 # ( device must be charging throughout )
 
@@ -246,10 +228,10 @@ set_ctrl_refs() {
 
   echo -e "(i) Checking compatibility...\n"
   if [[ ! -f $sys_cache ]]; then
-    find /sys/devices -type f ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
+    find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
   fi
 
-  for uevent_ in $(grep '/uevent$' $sys_cache); do
+  for uevent_ in $(cat $sys_cache); do
 
     if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
@@ -312,7 +294,7 @@ set_ctrl_refs() {
 
     set_prop uevent not_found_yet
     if ($(daemon_mode)); then
-      mcc --daemon >/dev/null
+      set_prop daemon_mode false
       echo -e "(!) Daemon mode toggled OFF\n"
     fi
     error "Your kernel don't support this functionality"
@@ -404,11 +386,11 @@ if [[ $(uevent_f) = not_found_yet ]]; then
     --daemon_trigger ) ;;
 
     --daemon         ) if ! ($(daemon_mode)); then
-            set_ctrl_refs; fi ;;
+            set_ctrl_refs 2>/dev/null; fi ;;
     --auto_shut      ) if ! ($(auto_shut)); then
-            set_ctrl_refs; fi ;;
+            set_ctrl_refs 2>/dev/null; fi ;;
 
-    *                ) set_ctrl_refs ;;
+    *                ) set_ctrl_refs 2>/dev/null ;;
   esac
 fi
 
@@ -435,13 +417,13 @@ case $1 in
 ## manpage
 
   --help)
-    cat $data_dir/README.md | while read line; do
+    while read line; do
       if [[ $line != '### Changelog' ]]; then
         echo "$line"
       else
         break
       fi
-    done
+    done <$data_dir/README.md
       ;;
 
 ## re-test and configure kernel references
@@ -454,10 +436,23 @@ case $1 in
 
 ## debugging on demand, output in /cache
 
-  --debug) debug 2>/dev/null
+  --debug)
+    echo -e "(i) Gathering ging data...\n"
+    _zip=/cache/mcc_-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
+    rm -f "$_zip"
+
+    $mod_dir/zip -9q "$_zip" /cache/mcc_debug_init.log 2>/dev/null
+    for entry in $(find $mod_dir -type f); do
+      if [[ $entry != $mod_dir/zip ]]; then
+        $mod_dir/zip -9qu "$_zip" $entry 2>/dev/null
+      fi
+    done
+
+    echo -e "- Done\n"
+    echo -e "(!) Please upload $_zip to the official XDA thread\n"
       ;;
 
-## remove battery stats
+## reset battery stats
 
   --breset)
     echo -e "(i) Resetting battery statistics...\n"

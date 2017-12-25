@@ -69,18 +69,13 @@
 -          :- Show this help message
 
 
-### Initial setup
-
-
-##### It requires your device to be charging during first run / [ --rconf ] for to detect where to hook into kernel
-
-##### For the above, connect charger / usb cable, run "mcc" and let it do the job
-
 ##### Notes :- 
 
 *    --  Running just "mcc" will reset up_threshold and down_threshold to defaults
 
 *    --  Automatically powering off only works with daemon mode ON
+
+*    --  It requires your device to be charging while installing / [ --rconf ] for to detect where to hook into kernel
 
 ### Changelog
 

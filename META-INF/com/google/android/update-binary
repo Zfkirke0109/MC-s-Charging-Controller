@@ -127,8 +127,8 @@ echo "(!) Please make sure the device is charging"
 echo " "
 sleep 3
 echo "(i) Checking compatibility..."
-find /sys/devices -type f ! -name *.log 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
-for UEVENT_ in `grep '/uevent$' /cache/tmpfile_mcc`; do
+find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
+for UEVENT_ in `cat /cache/tmpfile_mcc`; do
   if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $UEVENT_ \
   || grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $UEVENT_ \
   || grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $UEVENT_; then
