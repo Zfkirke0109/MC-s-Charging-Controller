@@ -19,15 +19,11 @@ fi
 
 # Setup BusyBox
 
-for bb_ in $(find /data -type f -name busybox); do
-
-  if (echo $bb_ | grep -q '/magisk/busybox$'); then
-    if [ -x "$bb_" ]; then
-      alias busybox=$bb_
-      break
-    fi
-  fi
-done
+bb=$(find /data -type f -name busybox | grep '/magisk/busybox$')
+if [ -x "$bb" ]; then
+  alias busybox=$bb
+  break
+fi
 
 if ! (busybox >/dev/null); then
   echo -e "(!) Please install BusyBox ( osm0sis' recommended )\n"
@@ -157,9 +153,9 @@ set_switch() {
   set_prop switch "$1 $2 $3"
   chown 0:0 $1; chmod 0644 $1;
 
-  uevent_=${1%/*}/uevent
-  set_prop uevent $uevent_
-  chown 0:0 $uevent_; chmod 0644 $uevent_;
+  uevent=${1%/*}/uevent
+  set_prop uevent $uevent
+  chown 0:0 $uevent; chmod 0644 $uevent;
 }
 
 ## turns charging ON / OFF
@@ -252,52 +248,52 @@ set_ctrl_refs() {
     find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
   fi
 
-  for uevent_ in $(cat $sys_cache); do
+  while read uevent; do
 
     ## cycling through all,
     ## get a matching uevent file
 
-    if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
-    || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
-    || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent_); then
-      set_prop uevent $uevent_
+    if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent) \
+    || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent) \
+    || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent); then
+      set_prop uevent $uevent
 
       ## cycling through all,
       ## get a boolean switch
 
-      for ref_ in ${uevent_%/*}/*; do
+      for ref in ${uevent%/*}/*; do
       old_level=$(batt_level)
-      chown 0:0 $ref_; chmod 644 $ref_;
+      chown 0:0 $ref; chmod 644 $ref;
 
-        case $(cat $ref_) in
-          1) echo 0 >$ref_
+        case $(cat $ref) in
+          1) echo 0 >$ref
             c_ON=1; c_OFF=0; ;;
 
-          0) echo 1 >$ref_
+          0) echo 1 >$ref
             c_ON=0; c_OFF=1; ;;
 
-          on) echo off >$ref_
+          on) echo off >$ref
             c_ON=on; c_OFF=off; ;;
 
-          off) echo on >$ref_
+          off) echo on >$ref
             c_ON=off; c_OFF=on; ;;
 
-          true) echo false >$ref_
+          true) echo false >$ref
             c_ON=true; c_OFF=false; ;;
 
-          false) echo true >$ref_
+          false) echo true >$ref
             c_ON=false; c_OFF=true; ;;
 
-          enable) echo disable >$ref_
+          enable) echo disable >$ref
             c_ON=enable; c_ON=disable; ;;
 
-          disable) echo enable >$ref_
+          disable) echo enable >$ref
             c_ON=disable; c_OFF=enable; ;;
 
-          enabled) echo disabled >$ref_
+          enabled) echo disabled >$ref
             c_ON=enabled; c_OFF=disabled; ;;
 
-          disabled) echo enabled >$ref_
+          disabled) echo enabled >$ref
             c_ON=disabled; c_OFF=enabled; ;;
 
           *) continue ;;
@@ -309,20 +305,20 @@ set_ctrl_refs() {
         if ! (is_charging); then
           echo $c_ON >$ref; sleep 0.2;
           if (is_charging); then
-            sleep 3m; echo $c_ON >$ref_; sleep 3;
+            sleep 3m; echo $c_ON >$ref; sleep 3;
             if [[ $(batt_level) -le $old_level ]]; then
               refs_found=true
               break 2
             fi
           fi
         fi
-        echo $c_ON >$ref_
+        echo $c_ON >$ref
       done
     fi
   done
 
   if [[ $refs_found ]]; then
-    set_switch $ref_ $c_ON $c_OFF
+    set_switch $ref $c_ON $c_OFF
     echo -e "- OK\n"
   else
 
@@ -503,7 +499,7 @@ case $1 in
     dumpsys batterysats --reset >/dev/null 2>&1
 
     if [[ $? -ne 0 ]]; then
-      rm -f /data/system/batterystats*.bin
+      rm -f /data/system/batterystats.bin
     fi
     echo -e "- Done\n"
       ;;

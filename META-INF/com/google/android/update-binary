@@ -2,9 +2,9 @@
 ##########################################################################################
 #
 # Magisk Module Template Install Script
-# by topjohnwu
+#   by topjohnwu
 # Modified for to support newer magisk versions
-# by MCMotherEffin' @ XDA Developers
+#   by MCMotherEffin' @ XDA Developers
 ##########################################################################################
 
 # Detect whether in boot mode
@@ -126,66 +126,66 @@ echo "(!) Please make sure the device is charging"
 echo " "
 sleep 3
 echo "(i) Checking compatibility..."
-find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >/cache/tmpfile_mcc
-for UEVENT_ in `cat /cache/tmpfile_mcc`; do
-  if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $UEVENT_ \
-  || grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $UEVENT_ \
-  || grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $UEVENT_; then
-    SYSDIR=${UEVENT_%/*}; cd $SYSDIR;
+find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >$TMPDIR/tmpfile
+while read uEvent; do
+  if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uEvent \
+  || grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uEvent \
+  || grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uEvent; then
+    SYSDIR=${uEvent%/*}; cd $SYSDIR;
 
-    for REF_ in `ls`; do
-      OLDLEVEL=`grep_prop POWER_SUPPLY_CAPACITY $UEVENT_`
-      chown 0:0 $REF_; chmod 644 $REF_;
+    for REF in `ls`; do
+      oldLevel=`grep_prop POWER_SUPPLY_CAPACITY $uEvent`
+      chown 0:0 $REF; chmod 644 $REF;
 
-      case `cat $REF_` in
-        1) echo 0 >$REF_
+      case `cat $REF` in
+        1) echo 0 >$REF
           c_ON=1; c_OFF=0; ;;
 
-        0) echo 1 >$REF_
+        0) echo 1 >$REF
           c_ON=0; c_OFF=1; ;;
 
-        on) echo off >$REF_
+        on) echo off >$REF
           c_ON=on; c_OFF=off; ;;
 
-        off) echo on >$REF_
+        off) echo on >$REF
           c_ON=off; c_OFF=on; ;;
 
-        true) echo false >$REF_
+        true) echo false >$REF
           c_ON=true; c_OFF=false; ;;
 
-        false) echo true >$REF_
+        false) echo true >$REF
           c_ON=false; c_OFF=true; ;;
 
-        enable) echo disable >$REF_
+        enable) echo disable >$REF
           c_ON=enable; c_ON=disable; ;;
 
-        disable) echo enable >$REF_
+        disable) echo enable >$REF
           c_ON=disable; c_OFF=enable; ;;
 
-        enabled) echo disabled >$REF_
+        enabled) echo disabled >$REF
           c_ON=enabled; c_OFF=disabled; ;;
 
-        disabled) echo enabled >$REF_
+        disabled) echo enabled >$REF
           c_ON=disabled; c_OFF=enabled; ;;
 
         *) continue ;;
       esac; sleep 0.2;
-      if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $UEVENT_; then
-        echo $c_ON >$REF_; sleep 0.2;
-        if grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $UEVENT_; then
-          sleep 180; echo $c_ON >$REF_; sleep 3;
-          if [ `grep_prop POWER_SUPPLY_CAPACITY $UEVENT_` -le "$OLDLEVEL" ]; then
+      if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
+        echo $c_ON >$REF; sleep 0.2;
+        if grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
+          sleep 180; echo $c_ON >$REF; sleep 3;
+          if [ `grep_prop POWER_SUPPLY_CAPACITY $uEvent` -le "$oldLevel" ]; then
             OK=true
             break 2
           fi
         fi
       fi
-      echo $c_ON >$REF_
+      echo $c_ON >$REF
     done
     cd /
   fi
-done
-rm -f /cache/tmpfile_mcc
+done <$TMPDIR/tmpfile
+rm -f $TMPDIR/tmpfile
 
 # Proceed, if only found compatible
 if [ "$OK" ]; then
@@ -231,11 +231,11 @@ fi
 if [ `grep_prop versionCode $INSTALLER/module.prop` -le $CVCODE ]; then
 
   # Uninstall
-
   echo "- Same or older detected"
   echo "- Uninstalling"
   rm -rf $MODPATH "$BMODPATH" 2>/dev/null
 else
+
   # Install
   set_prop() {
     sed -i "s|$1=.*|$1=$2|g" $MODPATH/data/settings.conf
@@ -278,8 +278,8 @@ else
     set_prop down_threshold $SET5
     set_prop shut_threshold $SET6
   fi
-  set_prop uevent $UEVENT_
-  set_prop switch "$SYSDIR/$REF_ $c_ON $c_OFF"
+  set_prop uevent $uEvent
+  set_prop switch "$SYSDIR/$REF $c_ON $c_OFF"
 
   # Auto mount
   touch $MODPATH/auto_mount
