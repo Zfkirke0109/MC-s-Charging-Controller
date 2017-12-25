@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712242
+# versionCode = 201712250
 # MCMotherEffin' @ XDA Developers
 
 # Initial verbose logger ( can't be toggled )
@@ -19,11 +19,11 @@ fi
 
 # Setup BusyBox
 
-for magisk_bb in $(find /data -type f -name busybox); do
+for bb_ in $(find /data -type f -name busybox); do
 
-  if (echo $magisk_bb | grep -q '/magisk/busybox$'); then
-    if [ -x "$magisk_bb" ]; then
-      alias busybox=$magisk_bb
+  if (echo $bb_ | grep -q '/magisk/busybox$'); then
+    if [ -x "$bb_" ]; then
+      alias busybox=$bb_
       break
     fi
   fi
@@ -81,7 +81,11 @@ sys_cache=$data_dir/sys_cache.tmp
 
 # All functions are defined here
 
-error() {  echo -e "(!) $1\n"; exit 1;  }
+## yields an error and exits 1
+
+error() { echo -e "(!) $1\n"; exit 1; }
+
+## gets a property from a propfile
 
 get_prop() {
   if [[ ! -z $2 ]]; then
@@ -92,6 +96,8 @@ get_prop() {
   sed -n s/^$1=//p $prop_file
 }
 
+## sets a property in a propfile
+
 set_prop() {
   if [[ ! -z $3 ]]; then
     prop_file=$3
@@ -100,6 +106,8 @@ set_prop() {
   fi
   sed -i "s|^$1=.*|$1=$2|g" $prop_file
 }
+
+## tests if the argument is a battery level
 
 test_level() {
   if (echo $1 | grep -Eq '^[0-9]+$'); then
@@ -111,11 +119,16 @@ test_level() {
   fi
 }
 
+## tests if arguments are not so close
+
 test_diff() {
   if [[ ! $1 -gt $(($2 + 5)) ]]; then
     error "Please use [ --keep ] [ KEEP % ] for this"
   fi
 }
+
+## tests, and if found false,
+## toggles the prop true
 
 test_toggle() {
   if ! ($($1)); then
@@ -123,6 +136,8 @@ test_toggle() {
     echo -e "(!) $2 toggled ON\n"
   fi
 }
+
+## toggles the prop true / false
 
 toggle() {
   if ($($1)); then
@@ -136,6 +151,8 @@ toggle() {
   echo -e "- Done\n"
 }
 
+## sets kernel switch properties
+
 set_switch() {
   set_prop switch "$1 $2 $3"
   chown 0:0 $1; chmod 0644 $1;
@@ -144,6 +161,8 @@ set_switch() {
   set_prop uevent $uevent_
   chown 0:0 $uevent_; chmod 0644 $uevent_;
 }
+
+## turns charging ON / OFF
 
 switch_() {
   c_ON=$(switch_f | awk '{print $2}')
@@ -157,12 +176,16 @@ switch_() {
   fi
 }
 
+## overrides daemon mode, if running
+
 override_daemon() {
   if ($(daemon_mode)); then
     set_prop daemon_mode false
     echo -e "(!) Daemon mode overridden\n"
   fi
 }
+
+## tests, and updates up, down_threshold
 
 update_cfg() {
   if [[ ! -z $2 ]]; then
@@ -172,7 +195,7 @@ update_cfg() {
         u=$1; d=$2;
       else gerror=true; fi
     else gerror=true; fi
-  elif [[ ! -z $1 ]]; then
+  else
 
     if [[ $1 -gt 20 ]]; then
       if [[ $1 -le 85 ]]; then
@@ -180,9 +203,6 @@ update_cfg() {
         d=$((u - 10)); else d=15; fi
       else gerror=true; fi
     else gerror=true; fi
-  else
-
-    u=70; d=60; defaults=true;
   fi
 
   if [[ $gerror ]]; then
@@ -191,15 +211,14 @@ update_cfg() {
 
   set_prop up_threshold $u
   set_prop down_threshold $d
-
-  if [[ $defaults ]]; then
-    echo -e "- Reverted to defaults, except for shut_threshold"
-  else
-    echo -e "- New values saved\n"
-  fi
+  echo -e "- New values saved\n"
 }
 
+## tests whether the device is charging
+
 is_charging() { grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $(uevent_f); }
+
+# My realtime configuration set-up
 
 uevent_f() { get_prop uevent; }
 
@@ -226,6 +245,8 @@ set_ctrl_refs() {
   echo -e "(!) Please make sure the device is charging\n"
   sleep 3
 
+  ## get all possible references
+
   echo -e "(i) Checking compatibility...\n"
   if [[ ! -f $sys_cache ]]; then
     find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >$sys_cache
@@ -233,10 +254,16 @@ set_ctrl_refs() {
 
   for uevent_ in $(cat $sys_cache); do
 
+    ## cycling through all,
+    ## get a matching uevent file
+
     if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent_) \
     || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent_); then
       set_prop uevent $uevent_
+
+      ## cycling through all,
+      ## get a boolean switch
 
       for ref_ in ${uevent_%/*}/*; do
       chown 0:0 $ref_; chmod 644 $ref_;
@@ -275,6 +302,9 @@ set_ctrl_refs() {
           *) continue ;;
         esac; sleep 0.2;
 
+        ## test if that works,
+        ## if yes break, else continue
+
         if ! (is_charging); then
           echo $c_ON >$ref; sleep 0.2;
           if (is_charging); then
@@ -291,6 +321,9 @@ set_ctrl_refs() {
     set_switch $ref_ $c_ON $c_OFF
     echo -e "- OK\n"
   else
+
+    ## switch is not found,
+    ## reset uevent, toggle daemon OFF
 
     set_prop uevent not_found_yet
     if ($(daemon_mode)); then
@@ -311,6 +344,7 @@ charge() {
   fi
 
   if [[ ! -z $2 ]]; then
+
     if (echo $2 | grep -Eq '^[0-9]+%$'); then
       threshold=$(echo $2 | tr -d '%')
       if [[ $threshold -lt 0 || $threshold -gt 100 ]]; then
@@ -378,6 +412,7 @@ fi
 
 if [[ $(uevent_f) = not_found_yet ]]; then
   case $1 in
+
     --log            ) ;;
     --help           ) ;;
     --rconf          ) ;;
@@ -399,6 +434,7 @@ case $1 in
 ## info
 
   --info)
+
     echo -e "- Battery status\n"
     echo "-- battery level :- $(batt_level)"
     echo "-- battery health :- $(get_prop POWER_SUPPLY_HEALTH $(uevent_f))"
@@ -417,6 +453,7 @@ case $1 in
 ## manpage
 
   --help)
+
     while read line; do
       if [[ $line != '### Changelog' ]]; then
         echo "$line"
@@ -429,6 +466,7 @@ case $1 in
 ## re-test and configure kernel references
 
   --rconf)
+
     echo -e "(i) Re-configuring kernel references...\n"
     set_ctrl_refs 2>/dev/null
     echo -e "- Done\n"
@@ -437,6 +475,7 @@ case $1 in
 ## debugging on demand, output in /cache
 
   --debug)
+
     echo -e "(i) Gathering ging data...\n"
     _zip=/cache/mcc_-"$(getprop ro.product.brand)-$(getprop ro.product.device)".zip
     rm -f "$_zip"
@@ -455,8 +494,10 @@ case $1 in
 ## reset battery stats
 
   --breset)
+
     echo -e "(i) Resetting battery statistics...\n"
     dumpsys batterysats --reset >/dev/null 2>&1
+
     if [[ $? -ne 0 ]]; then
       rm -f /data/system/batterystats*.bin
     fi
@@ -471,6 +512,7 @@ case $1 in
 ## toggle auto shut
 
   --auto_shut)
+
     toggle auto_shut "automatic power-off"
     if ($(auto_shut)); then
       test_toggle daemon_mode "Daemon mode"
@@ -485,6 +527,7 @@ case $1 in
 ## keep battery level at certain level
 
   --keep)
+
     test_level $2
     override_daemon
     if ! (is_charging); then
@@ -520,6 +563,7 @@ case $1 in
 ## trigger daemon ( MAGISK )
 
   --daemon_trigger)
+
     while(:); do
 
       if ($(auto_shut)); then
@@ -531,12 +575,12 @@ case $1 in
       fi
 
       if ($(daemon_mode)); then
-        if [[ $(batt_level) -gt $(up_threshold) ]]; then
+        if [[ $(batt_level) -ge $(up_threshold) ]]; then
           if (is_charging); then
             switch_ OFF
           fi
 
-        elif [[ $(batt_level) -lt $(down_threshold) ]]; then
+        elif [[ $(batt_level) -le $(down_threshold) ]]; then
           if ! (is_charging); then
             switch_ ON
           fi
@@ -549,14 +593,17 @@ case $1 in
 ## back to defaults
 
   --defaults)
-    update_cfg >/dev/null
+
     set_prop shut_threshold 20
+    set_prop up_threshold 70
+    set_prop down_threshold 60
     echo -e "- Reverted all to defaults\n"
      ;;
 
 ## update auto shut threshold
 
   --shut)
+
     if (echo $2 | grep -Eq '^[0-9]+$'); then
       if [[ $2 -gt 20 || $2 -lt 5 ]]; then
         error "Please give a level between 5 - 20"
@@ -573,6 +620,7 @@ case $1 in
 ## update previous thresholds
 
   *)
+
     if [[ ! -z $2 ]]; then
       test_level $2; test_level $1;
       if [[ $2 -gt $1 ]]; then
@@ -585,8 +633,11 @@ case $1 in
       test_level $1; update_cfg $1;
 
     else
-      update_cfg
+      set_prop up_threshold 70
+      set_prop down_threshold 60
+      echo -e "- Reverted to defaults, except for shut threshold\n"
     fi
+
     test_toggle daemon_mode "Daemon mode"
       ;;
 

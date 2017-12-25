@@ -3,9 +3,8 @@
 #
 # Magisk Module Template Install Script
 # by topjohnwu
-# Modified by MCMotherEffin' @ XDA Developers
-# for to support newer magisk versions
-#
+# Modified for to support newer magisk versions
+# by MCMotherEffin' @ XDA Developers
 ##########################################################################################
 
 # Detect whether in boot mode
@@ -27,7 +26,7 @@ fi
 
 echo " "
 
-# This path should work in any cases
+# Find needed utilities, works in any cases
 TMPDIR=/dev/tmp
 MOUNTPATH=/dev/magisk_merge
 IMG=/data/magisk_merge.img
@@ -193,10 +192,9 @@ else
   exit 1
 fi
 
-# Get required image size
+# Get the image ready for installation
 request_zip_size_check "$ZIPFILE"
 
-# Create or if found and need space, resize merge image
 if [ -f "$IMG" ]; then
   echo "- Found $IMG"
   image_size_check $IMG
@@ -216,7 +214,7 @@ echo "- Mounting $IMG to $MOUNTPATH"
 MAGISKLOOP=`$MAGISKBIN/magisk --mountimg $IMG $MOUNTPATH`
 is_mounted $MOUNTPATH || abort "! $IMG mount failed..."
 
-# Determine if installed or not
+# Determine whether installed or not
 if [ -f "$MODPATH/module.prop" ]; then
   CVCODE=`grep_prop versionCode $MODPATH/module.prop`
 elif [ -f "$BMODPATH/module.prop" ]; then
@@ -227,6 +225,9 @@ fi
 
 # Flash again to uninstall
 if [ `grep_prop versionCode $INSTALLER/module.prop` -le $CVCODE ]; then
+
+  # Uninstall
+
   echo "- Same or older detected"
   echo "- Uninstalling"
   rm -rf $MODPATH "$BMODPATH" 2>/dev/null

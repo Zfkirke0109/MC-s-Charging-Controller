@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712242
+###### versionCode = 201712250
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -78,6 +78,12 @@
 *    --  It requires your device to be charging while installing / [ --rconf ] for to detect where to hook into kernel
 
 ### Changelog
+
+##### 2017.12.25
+
+*  -- Documented the entire module
+
+*  -- Minor code fixes, improvements
 
 ##### 2017.12.24-2
 
