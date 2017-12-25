@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712251
+###### versionCode = 201712252
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -75,7 +75,7 @@
 
 *    --  Automatically powering off only works with daemon mode ON
 
-*    --  It requires your device to be charging while installing / [ --rconf ], and would take at least 3 minutes for to correctly detect where to hook into kernel
+*    --  It requires your device to be charging while installing / [ --rconf ], and would take at least 4 minutes for to correctly detect where to hook into kernel
 
 ### Changelog
 

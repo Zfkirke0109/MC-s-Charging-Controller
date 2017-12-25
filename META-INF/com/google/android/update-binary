@@ -124,7 +124,7 @@ echo " "
 # ( device must be charging throughout )
 echo "(!) Please make sure the device is charging"
 echo " "
-sleep 3
+sleep 7
 echo "(i) Checking compatibility..."
 find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >$TMPDIR/tmpfile
 while read uEvent; do
@@ -134,7 +134,7 @@ while read uEvent; do
     SYSDIR=${uEvent%/*}; cd $SYSDIR;
 
     for REF in `ls`; do
-      oldLevel=`grep_prop POWER_SUPPLY_CAPACITY $uEvent`
+#      oldLevel=`grep_prop POWER_SUPPLY_CAPACITY $uEvent`
       chown 0:0 $REF; chmod 644 $REF;
 
       case `cat $REF` in
@@ -173,12 +173,12 @@ while read uEvent; do
       if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
         echo $c_ON >$REF; sleep 0.2;
         if grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
-          echo $c_OFF >$REF; sleep 180;
-          echo $c_ON >$REF;  sleep 10;
-          if [ `grep_prop POWER_SUPPLY_CAPACITY $uEvent` -le "$oldLevel" ]; then
+#          echo $c_OFF >$REF; sleep 240;
+#          echo $c_ON >$REF;  sleep 7;
+#          if [ `grep_prop POWER_SUPPLY_CAPACITY $uEvent` -le "$oldLevel" ]; then
             OK=true
             break 2
-          fi
+#          fi
         fi
       fi
       echo $c_ON >$REF
