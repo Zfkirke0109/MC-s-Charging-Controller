@@ -20,10 +20,7 @@ fi
 # Setup BusyBox
 
 bb=$(find /data -type f -name busybox | grep '/magisk/busybox$')
-if [ -x "$bb" ]; then
-  alias busybox=$bb
-  break
-fi
+if [ -x "$bb" ]; then alias busybox=$bb; fi
 
 if ! (busybox >/dev/null); then
   echo -e "(!) Please install BusyBox ( osm0sis' recommended )\n"
@@ -305,7 +302,8 @@ set_ctrl_refs() {
         if ! (is_charging); then
           echo $c_ON >$ref; sleep 0.2;
           if (is_charging); then
-            sleep 3m; echo $c_ON >$ref; sleep 3;
+            echo $c_OFF >$ref; sleep 3m;
+            echo $c_ON >$ref;  sleep 10;
             if [[ $(batt_level) -le $old_level ]]; then
               refs_found=true
               break 2

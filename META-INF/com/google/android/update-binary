@@ -173,7 +173,8 @@ while read uEvent; do
       if ! grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
         echo $c_ON >$REF; sleep 0.2;
         if grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uEvent; then
-          sleep 180; echo $c_ON >$REF; sleep 3;
+          echo $c_OFF >$REF; sleep 180;
+          echo $c_ON >$REF;  sleep 10;
           if [ `grep_prop POWER_SUPPLY_CAPACITY $uEvent` -le "$oldLevel" ]; then
             OK=true
             break 2
