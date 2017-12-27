@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712253
+###### versionCode = 201712271
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -22,7 +22,7 @@
 -          :-   Defaults :- 70 60
 
 -      [ --shut ] [ SHUT % ]
--          :- Set threshold ( % ) used by mcc daemon mode for powering off the device
+-          :- Set threshold ( % ) used by mcc daemon mode for automatically powering the device off
 -          :-   Default  :- 20
 
 -      [ --keep ] [ KEEP % ]
@@ -42,12 +42,12 @@
 -          :- Toggle MAGISK daemon mode ON / OFF
 -          :-   Default  :- ON
 
--      [ --auto_shut ]
+-      [ --autoshut ]
 -          :- Toggle automatic power-off ON / OFF
 -          :-   Default  :- ON
 
 -      [ --log ]
--          :- Toggle verbose logging ON / OFF
+-          :- Toggle verbose logs ON / OFF
 -          :-   Default  :- OFF
 
 -      [ --defaults ]
@@ -73,11 +73,15 @@
 
 *    --  Running just "mcc" will reset up_threshold and down_threshold to defaults
 
-*    --  Automatically powering off only works with daemon mode ON
-
 *    --  It requires your device to be charging while installing / [ --rconf ] for to detect where to hook into kernel
 
 ### Changelog
+
+##### 2017.12.27-1
+
+*  -- Better control when multiple switches available
+
+*  -- Fixed minor codes
 
 ##### 2017.12.25-2
 
