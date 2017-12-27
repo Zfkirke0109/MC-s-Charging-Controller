@@ -1,15 +1,15 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
-# mcc update-binary ( shell edify replacement )
-# versionCode = 201712272
+# mcc update-binary
+# versionCode = 201712291
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
 
-if ! (ps | grep 'zygote' | grep -qv 'grep'); then
+if ! (ps | grep zygote | grep -qv grep); then
   boot_mode=false
 
-  if (ps -A 2>/dev/null | grep 'zygote' | grep -qv 'grep'); then
+  if (ps -A 2>/dev/null | grep zygote | grep -qv grep); then
     boot_mode=true
   fi
 else
@@ -17,6 +17,7 @@ else
 fi
 
 # Abort if recovery installation
+# ( compatibility issues )
 
 if ! ($boot_mode); then
 
@@ -25,22 +26,21 @@ if ! ($boot_mode); then
     echo -e "ui_print $1\nui_print" >>/proc/self/fd/$output_fd
   }
 
-  ui_print " "
-  ui_print "(!) Please install in boot mode"
-  ui_print " "
+  ui_print ' '
+  ui_print '(!) Please install in boot mode'
+  ui_print ' '
   exit 1
 fi
 
-echo " "
+echo ' '
 
 # Define universal variables
 
 zip_file="$3"
-tmp_dir=/dev/tmpdir_mcc
-tmp_file=$tmp_dir/tmp_file
+tmp_file=/dev/tmpdir_mcc/tmp_file
 mount_path=/dev/magisk_img_mcc
 mod_path=$mount_path/mcc
-image=/data/magisk_merge.img
+image=      # image will be found later
 
 # Define universal functions
 
@@ -52,10 +52,10 @@ set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
 
 is_mounted() { grep -q " $1 " /proc/mounts; }
 
-is_charging() { grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $uevent; }
+is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
 
-set_dir_perms() {
-  find $1 2>/dev/null | while read entry; do
+set_perms_recursive() {
+  find $1 | while read entry; do
     chown $2:$3 $entry
     if [[ -f $entry ]]; then
       chmod $4 $entry
@@ -66,22 +66,27 @@ set_dir_perms() {
   done
 }
 
-image_test() {
+imgsize_test() {
   blocks=$(e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print $1}')
   echo $((blocks / 256))
 }
 
 # Set BusyBox up
 
-magisk_bb=$(find /data -type f -name busybox | grep '/magisk/busybox$')
+magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
+
 if [ ! -x "$magisk_bb" ]; then
   echo -e "(!) Could not find MAGISK internal BusyBox\n"
-  error "Please install MAGISK v14.0+"
+  error 'Please install MAGISK v14.0+'
 fi
 
 for func in $($magisk_bb --list); do
-  alias $func="$magisk_bb $func"
+  alias $func="$magisk_bb $func" 2>/dev/null
 done
+
+# Image is set here
+
+image=${magisk_bb%/*/*}/magisk_merge.img
 
 # Detect whether A / B device
 
@@ -94,13 +99,15 @@ fi
 # Detect MAGISK mount point
 
 for loop_device in /dev/block/loop*; do
-  if (losetup $loop_device | grep -q '/data/.*magisk.img'); then
-    for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v "^$system"); do
+
+  if (losetup $loop_device | grep -q /data/.*magisk.img); then
+
+    for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
+
       if [[ ! -z $mount_point ]]; then
         if [[ -f $mount_point/.core/hidelist ]]; then
           if [[ -d $mount_point/.core/service.d ]]; then
-            break 2
-          fi
+            break 2; fi
         fi
       fi
       unset mount_point
@@ -111,7 +118,7 @@ done
 if [[ ! -z $mount_point ]]; then
   main_mod_path=$mount_point/mcc
 else
-  error "Could not find MAGISK mount point"
+  error 'Could not find MAGISK mount point'
 fi
 
 # Print module name
@@ -130,13 +137,14 @@ sleep 5
 
 echo -e "(i) Checking compatibility...\n"
 
-mkdir $tmp_dir
-find /sys/devices -type f -name uevent 2>/dev/null | grep -E 'batt|charg' | sort >$tmp_file
+mkdir ${tmp_file%/*}
+find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$tmp_file
 
 while read uevent; do
-  if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*$' $uevent) \
-  || (grep -q '^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$' $uevent) \
-  || (grep -q '^POWER_SUPPLY_NAME=.*[Dd][Cc].*' $uevent); then
+
+  if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent) \
+  || (grep -q ^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$ $uevent) \
+  || (grep -q ^POWER_SUPPLY_NAME=.*[Dd][Cc].* $uevent); then
 
     i=0
     for ref in ${uevent%/*}/*; do
@@ -177,13 +185,15 @@ while read uevent; do
 
         *) continue                     ;;
       esac; sleep 0.2
+
       if ! (is_charging); then
         echo $c_ON >$ref; sleep 0.2;
         if (is_charging); then
+
           switches[i]="$ref $c_ON $c_OFF"
+
           ((i += 1)); if [[ $i -eq 3 ]]; then
-          break 2
-          fi
+          break 2; fi
         fi
       fi
       echo $c_ON >$ref
@@ -191,26 +201,27 @@ while read uevent; do
     if [[ $i -gt 0 ]]; then break; fi
   fi
 done <$tmp_file
+rm -rf ${tmp_file%/*}
 
 if [[ $i -gt 0 ]]; then
   echo -e "- OK\n"
 else
-  error "Your kernel don't support this functionalities"
+  error "Your kernel don't support these functionalities"
 fi
 
 # Get the image ready for installation
 
 if [[ -f $image ]]; then
-  echo -e "(i) $image exists\n"
+  echo -e "(i) $image detected\n"
 
-  image_used=$(image_test 1)
-  image_total=$(image_test 2)
-  image_free=$((image_total - image_used))
+  img_used=$(imgsize_test 1)
+  img_total=$(imgsize_test 2)
+  img_free=$((img_total - img_used))
 
-  if [[ ! $image_free -gt 1 ]]; then
-    image_size_new=$(((image_used + 1) / 32 * 32 + 64))
-    echo -e "(i) Resizing $image to ${image_size_new}M...\n"
-    resize2fs $image ${image_size_new}M
+  if [[ ! $img_free -gt 1 ]]; then
+    imgsize_new=$(((img_used + 1) / 32 * 32 + 64))
+    echo -e "(i) Resizing $image to ${imgsize_new}M...\n"
+    resize2fs $image ${imgsize_new}M
   fi
 else
 
@@ -227,16 +238,15 @@ for loop in 0 1 2 3 4 5 6 7; do
   loop_device=/dev/block/loop$loop
 
   if [[ ! -f $loop_device && ! -b $loop_device ]]; then
-    mknod $loop_device b 7 $loop
-  fi
+    mknod $loop_device b 7 $loop; fi
+
   if (losetup $loop_device $image); then
-    mount -t ext4 -o loop $loop_device $mount_path
-  fi
+    mount -t ext4 -o loop $loop_device $mount_path; fi
+
   if (is_mounted $mount_path); then break; fi
 done
 if ! (is_mounted $mount_path); then
-  error "Could not mount $image"
-fi
+  error "Could not mount $image"; fi
 
 # Detect whether installed or not
 
@@ -250,19 +260,13 @@ else
   cur_ver_code=0
 fi
 
-# Unzip module.prop, for flash again to uninstall
+# Here comes flash again to uninstall
 
-unzip -oq "$zip_file" module.prop -d $tmp_dir
-if [[ ! -f $tmp_dir/module.prop ]]; then
-  umount $mount_path; losetup -d $loop_device;
-  error "Could not extract zip file"
-fi
-
-if [[ $(get_prop versionCode $tmp_dir/module.prop) -le $cur_ver_code ]]; then
+if [[ $cur_ver_code -ge 201712291 ]]; then
 
   # Uninstall
 
-  echo -e "(i) Same or older detected\n"
+  echo -e "(i) Same or newer detected\n"
   echo -e "(!) Uninstalling...\n"
   rm -rf $mod_path $main_mod_path 2>/dev/null
 else
@@ -283,29 +287,15 @@ else
     set_6=$(get_prop shut_threshold $old_conf)
   fi
 
-  # Clean module path up
+  # Create a clean module path
 
   rm -rf $mod_path 2>/dev/null
   mkdir $mod_path
 
-  # Copy files
+  # Extract files
 
-  echo -e "(i) Copying module files...\n"
-  unzip -oq "$zip_file" 'system/*' -d $mod_path
-
-  zip_bin=true
-  case $(get_prop ro.product.cpu.abi $system/build.prop) in
-
-  arm*)  unzip -oq "$zip_file" zip_arm -d $mod_path               ;;
-  x86*)  unzip -oq "$zip_file" zip_x86 -d $mod_path               ;;
-  *   )  zip_bin=false  ;;
-  esac
-
-  if ($zip_bin); then
-    mv -f $mod_path/zip* $mod_path/zip
-  fi
-
-  unzip -oq "$zip_file" 'data/*' -d $mod_path
+  echo -e "(i) Extracting module files...\n"
+  unzip -oq "$zip_file" 'system/*' 'data/*' -d $mod_path
   unzip -oq "$zip_file" README.md -d $mod_path/data
 
   # Set preserved settings
@@ -339,14 +329,13 @@ else
 
   # Module info
 
-  cp -f $tmp_dir/module.prop $mod_path
+  unzip -oq "$zip_file" module.prop -d $mod_path
 
   # Update info for Magisk Manager
 
   mkdir $main_mod_path 2>/dev/null
   touch $main_mod_path/update
-  chmod 644 $main_mod_path/update
-  cp -f $tmp_dir/module.prop $main_mod_path
+  cp -f $mod_path/module.prop $main_mod_path
 
   # Service mode scripts
 
@@ -354,22 +343,14 @@ else
 
   echo -e "(i) Setting permissions...\n"
 
-  set_dir_perms $mod_path 0 0 644 755
-  set_dir_perms $mod_path/system/bin 0 2000 755 755
-  if ($zip_bin); then
-    zip_bin=$mod_path/zip
-    chown 0:2000 $zip_bin
-    chmod 755 $zip_bin
-    chcon u:object_r:system_file:s0 $zip_bin
-  fi
+  set_perms_recursive $mod_path 0 0 644 755
+  set_perms_recursive $mod_path/system/bin 0 2000 755 755
 fi
+
+# Unmount the image
 
 umount $mount_path; losetup -d $loop_device;
 rmdir $mount_path
-
-# Clean temporary files
-
-rm -rf $tmp_dir
 
 echo -e "- Done\n"
 exit 0
