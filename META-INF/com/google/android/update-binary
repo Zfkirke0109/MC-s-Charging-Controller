@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary ( shell edify replacement )
-# versionCode = 201712271
+# versionCode = 201712272
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -195,7 +195,7 @@ done <$tmp_file
 if [[ $i -gt 0 ]]; then
   echo -e "- OK\n"
 else
-  error "Your kernel don't support this functionality"
+  error "Your kernel don't support this functionalities"
 fi
 
 # Get the image ready for installation
@@ -209,7 +209,7 @@ if [[ -f $image ]]; then
 
   if [[ ! $image_free -gt 1 ]]; then
     image_size_new=$(((image_used + 1) / 32 * 32 + 64))
-    echo -e "(i) Resizing $image to $image_size_new...\n"
+    echo -e "(i) Resizing $image to ${image_size_new}M...\n"
     resize2fs $image ${image_size_new}M
   fi
 else
@@ -238,7 +238,7 @@ if ! (is_mounted $mount_path); then
   error "Could not mount $image"
 fi
 
-# Determine whether installed or not
+# Detect whether installed or not
 
 if [[ -f $mod_path/module.prop ]]; then
   cur_ver_code=$(get_prop versionCode $mod_path/module.prop)
@@ -252,7 +252,7 @@ fi
 
 # Unzip module.prop, for flash again to uninstall
 
-unzip -oq "$zip_file" module.prop -d $tmp_dir 2>/dev/null
+unzip -oq "$zip_file" module.prop -d $tmp_dir
 if [[ ! -f $tmp_dir/module.prop ]]; then
   umount $mount_path; losetup -d $loop_device;
   error "Could not extract zip file"
@@ -275,9 +275,9 @@ else
   if [[ -f $old_conf ]]; then
     echo -e "(i) Backing up old settings...\n"
 
-    set_1=$(get_prop auto_shut $old_conf)
-    set_2=$(get_prop daemon_mode $old_conf)
-    set_3=$(get_prop do_ver_logging $old_conf)
+    set_1=$(get_prop ver_logs $old_conf)
+    set_2=$(get_prop auto_shut $old_conf)
+    set_3=$(get_prop daemon_mode $old_conf)
     set_4=$(get_prop up_threshold $old_conf)
     set_5=$(get_prop down_threshold $old_conf)
     set_6=$(get_prop shut_threshold $old_conf)
@@ -291,13 +291,13 @@ else
   # Copy files
 
   echo -e "(i) Copying module files...\n"
-  unzip -oq "$zip_file" 'system/*' -d $mod_path 2>/dev/null
+  unzip -oq "$zip_file" 'system/*' -d $mod_path
 
   zip_bin=true
   case $(get_prop ro.product.cpu.abi $system/build.prop) in
 
-  arm*)  unzip -oq "$zip_file" zip_arm -d $mod_path 2>/dev/null   ;;
-  x86*)  unzip -oq "$zip_file" zip_x86 -d $mod_path 2>/dev/null   ;;
+  arm*)  unzip -oq "$zip_file" zip_arm -d $mod_path               ;;
+  x86*)  unzip -oq "$zip_file" zip_x86 -d $mod_path               ;;
   *   )  zip_bin=false  ;;
   esac
 
@@ -305,16 +305,17 @@ else
     mv -f $mod_path/zip* $mod_path/zip
   fi
 
-  unzip -oq "$zip_file" 'data/*' -d $mod_path 2>/dev/null
-  unzip -oq "$zip_file" README.md -d $mod_path/data 2>/dev/null
+  unzip -oq "$zip_file" 'data/*' -d $mod_path
+  unzip -oq "$zip_file" README.md -d $mod_path/data
 
   # Set preserved settings
 
   if [[ ! -z $set_1 ]]; then
     echo -e "(i) Restoring old settings...\n"
-    set_prop auto_shut $set_1
-    set_prop daemon_mode $set_2
-    set_prop ver_logs $set_3
+
+    set_prop ver_logs $set_1
+    set_prop auto_shut $set_2
+    set_prop daemon_mode $set_3
     set_prop up_threshold $set_4
     set_prop down_threshold $set_5
     set_prop shut_threshold $set_6
@@ -349,7 +350,7 @@ else
 
   # Service mode scripts
 
-  unzip -oq "$zip_file" service.sh -d $mod_path 2>/dev/null
+  unzip -oq "$zip_file" service.sh -d $mod_path
 
   echo -e "(i) Setting permissions...\n"
 

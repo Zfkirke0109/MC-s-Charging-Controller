@@ -1,11 +1,9 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712271
+###### versionCode = 201712272
 ###### MCMotherEffin' @ XDA Developers
 
-
 ### Into
-
 
 ##### It is meant for to extend Lithium batteries' life by controlling charging
 
@@ -17,12 +15,12 @@
 ##### Arguments can be
 
 -      [ STOP % ] [ START % ]
--          :- Set thresholds ( % ) used by mcc daemon mode for stopping / starting charging
+-          :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
 -          :- [ START % ] is optional
 -          :-   Defaults :- 70 60
 
 -      [ --shut ] [ SHUT % ]
--          :- Set threshold ( % ) used by mcc daemon mode for automatically powering the device off
+-          :- Set threshold ( % ) for automatically powering the device off
 -          :-   Default  :- 20
 
 -      [ --keep ] [ KEEP % ]
@@ -60,10 +58,10 @@
 -          :- Reset battery statistics
 
 -      [ --rconf ]
--          :- Re-configure kernel references used by mcc
+-          :- Re-configure kernel references
 
 -      [ --debug ]
--          :- Gather debugging data into /cache/mcc_debug-Device.zip
+-          :- Gather debugging data
 
 -      [ --help ]
 -          :- Show this help message
@@ -76,6 +74,14 @@
 *    --  It requires your device to be charging while installing / [ --rconf ] for to detect where to hook into kernel
 
 ### Changelog
+
+##### 2017.12.27-2
+
+*  -- Fixed error when not root
+
+*  -- Fixed recovery UI
+
+*  -- Minor improvements
 
 ##### 2017.12.27-1
 

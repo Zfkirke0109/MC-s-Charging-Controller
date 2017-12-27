@@ -1,12 +1,8 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712271
+# versionCode = 201712272
 # MCMotherEffin' @ XDA Developers
-
-# Initial verbose logger ( can't be toggled )
-
-    set -x 2>/cache/mcc_init.log
 
 # Detect whether root or not
 
@@ -16,6 +12,10 @@ if ! (id | grep -iq 'uid=0'); then
 else
   echo " "
 fi
+
+# Initial verbose logger ( can't be toggled )
+
+    set -x 2>/cache/mcc_init.log
 
 # Set BusyBox up
 
@@ -203,7 +203,7 @@ update_udt() {
 
 is_charging() { grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $(uevent_f); }
 
-# My realtime configuration set-up
+# My realtime configurations set-up
 
 uevent_f() { get_prop uevent; }
 
@@ -315,6 +315,7 @@ set_ctrl_refs() {
   done <$sys_cache
 
   if [[ $i -gt 1 ]]; then
+    test_toggle daemon_mode "Daemon mode"
     echo -e "- OK\n"
   else
 
@@ -562,7 +563,7 @@ case $1 in
   --stop) charge stop $2
       ;;
 
-## trigger daemon service ( MAGISK )
+## trigger service ( MAGISK )
 
   --daemon_trigger)
 
