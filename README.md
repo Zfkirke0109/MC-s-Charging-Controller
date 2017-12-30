@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712291
+###### versionCode = 201712301
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -100,6 +100,10 @@
 ### Changelog
 
 
+##### 2017.12.30-1
+
+*  -- Wait for charger to connect
+
 ##### 2017.12.29-1
 
 *  -- Forgot to run su first, no problem
@@ -117,11 +121,3 @@
 *  -- Removed zip binaries
 
 *  -- Minor code improvements
-
-##### 2017.12.27-2
-
-*  -- Fixed error when not root
-
-*  -- Fixed recovery UI
-
-*  -- Minor improvements
