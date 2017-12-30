@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Service
-# versionCode = 201712301
+# versionCode = 201712302
 # MCMotherEffin' @ XDA Developers
 
 # Define variables

@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201712301
+# versionCode = 201712302
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -148,7 +148,7 @@ while read uevent; do
 
     while ! (is_charging); do
       echo -e "(!) Please connect the charger\n"; sleep 5;
-    done
+    done; sleep 2
 
     i=0
     for ref in ${uevent%/*}/*; do
@@ -266,7 +266,7 @@ fi
 
 # Here comes flash again to uninstall
 
-if [[ $cur_ver_code -ge 201712301 ]]; then
+if [[ $cur_ver_code -ge 201712302 ]]; then
 
   # Uninstall
 

@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712301
+# versionCode = 201712302
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -254,7 +254,7 @@ set_ctrl_refs() {
 
       while ! (is_charging); do
         echo -e "(!) Please connect the charger\n"; sleep 5;
-      done
+      done; sleep 2
 
       ## cycling through all,
       ## get a boolean switch
