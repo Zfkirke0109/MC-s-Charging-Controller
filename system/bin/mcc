@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712302
+# versionCode = 201712311
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -143,7 +143,7 @@ toggle() {
 ## turns charging ON / OFF
 
 switch_() {
-  for i in 1 2 3; do
+  for i in 1 2 3 4; do
 
     c_ON=$(get_prop switch_$i | awk '{print $2}')
     c_OFF=$(get_prop switch_$i | awk '{print $3}')
@@ -188,7 +188,7 @@ test_update_udt() {
   fi
 
   if [[ $gerror && ! $force ]]; then
-    error 'Please use levels between 15 - 85'; fi
+    error 'Please give a level between 15 - 85'; fi
 
   u=$1; if [[ ! $d ]]; then d=$2; fi
   set_prop up_threshold $u
@@ -226,7 +226,7 @@ set_ctrl_refs() {
 
   ## reset previous switches
   
-  for i in 1 2 3; do
+  for i in 1 2 3 4; do
     set_prop switch_$i 'not_found_yet dummy_ON dummy_OFF'
   done
 
@@ -244,9 +244,7 @@ set_ctrl_refs() {
     ## cycling through all,
     ## get a matching uevent file
 
-    if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent) \
-    || (grep -q ^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$ $uevent) \
-    || (grep -q ^POWER_SUPPLY_NAME=.*[Dd][Cc].* $uevent); then
+    if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
       set_prop uevent $uevent
 
       ## ask and wait for charger,
@@ -254,7 +252,7 @@ set_ctrl_refs() {
 
       while ! (is_charging); do
         echo -e "(!) Please connect the charger\n"; sleep 5;
-      done; sleep 2
+      done; sleep 1
 
       ## cycling through all,
       ## get a boolean switch
@@ -308,7 +306,7 @@ set_ctrl_refs() {
 
             set_prop switch_$i "$ref $c_ON $c_OFF"
 
-            ((i += 1)); if [[ $i -eq 4 ]]; then
+            ((i += 1)); if [[ $i -eq 5 ]]; then
               break 2; fi
           fi
         fi
@@ -402,7 +400,7 @@ if ($(ver_logs)); then
       echo -e "(!) Verbose logs are enabled\n"
 
       getprop | grep product | tr -d [ | tr -d ] >$ver_log
-      echo -e "\nmcc_versionCode = 201712301\n" >>$ver_log
+      echo -e "\nmcc_versionCode = 201712311\n" >>$ver_log
       set -x 2>>$ver_log
     fi
   fi
@@ -628,7 +626,7 @@ case $1 in
 
   *)
 
-    if [[ $1 = --* ]]; then
+    if [[ $1 = -* ]]; then
       error "Invalid argument"; fi
 
     if [[ ! -z $2 ]]; then

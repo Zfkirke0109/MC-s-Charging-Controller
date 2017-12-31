@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201712302
+# versionCode = 201712311
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -10,14 +10,13 @@ if ! (ps | grep zygote | grep -qv grep); then
   boot_mode=false
 
   if (ps -A 2>/dev/null | grep zygote | grep -qv grep); then
-    boot_mode=true
-  fi
+    boot_mode=true; fi
 else
   boot_mode=true
 fi
 
 # Abort if recovery installation
-# ( compatibility issues )
+# ( kernel compatibility issues )
 
 if ! ($boot_mode); then
 
@@ -40,7 +39,7 @@ zip_file="$3"
 tmp_file=/dev/tmpdir_mcc/tmp_file
 mount_path=/dev/magisk_img_mcc
 mod_path=$mount_path/mcc
-image=      # image will be found later
+image=      # image will be found and set later
 
 # Define universal functions
 
@@ -54,6 +53,10 @@ is_mounted() { grep -q " $1 " /proc/mounts; }
 
 is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
 
+imgsize_test() {
+  e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
+}
+
 set_perms_recursive() {
   find $1 | while read entry; do
     chown $2:$3 $entry
@@ -64,11 +67,6 @@ set_perms_recursive() {
     fi
     chcon u:object_r:system_file:s0 $entry
   done
-}
-
-imgsize_test() {
-  blocks=$(e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print $1}')
-  echo $((blocks / 256))
 }
 
 # Set BusyBox up
@@ -84,7 +82,7 @@ for func in $($magisk_bb --list); do
   alias $func="$magisk_bb $func" 2>/dev/null
 done
 
-# Image is set here
+# image is set here
 
 image=${magisk_bb%/*/*}/magisk_merge.img
 
@@ -142,13 +140,11 @@ find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$tmp_file
 
 while read uevent; do
 
-  if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent) \
-  || (grep -q ^POWER_SUPPLY_NAME=.*[Uu][Ss][Bb].*$ $uevent) \
-  || (grep -q ^POWER_SUPPLY_NAME=.*[Dd][Cc].* $uevent); then
+  if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
 
     while ! (is_charging); do
       echo -e "(!) Please connect the charger\n"; sleep 5;
-    done; sleep 2
+    done; sleep 1
 
     i=0
     for ref in ${uevent%/*}/*; do
@@ -196,7 +192,7 @@ while read uevent; do
 
           switches[i]="$ref $c_ON $c_OFF"
 
-          ((i += 1)); if [[ $i -eq 3 ]]; then
+          ((i += 1)); if [[ $i -eq 4 ]]; then
           break 2; fi
         fi
       fi
@@ -264,9 +260,9 @@ else
   cur_ver_code=0
 fi
 
-# Here comes flash again to uninstall
+# Flash again to uninstall
 
-if [[ $cur_ver_code -ge 201712302 ]]; then
+if [[ $cur_ver_code -ge 201712311 ]]; then
 
   # Uninstall
 
@@ -318,7 +314,7 @@ else
   # Set new tested settings for this
 
   set_prop uevent $uevent
-  for i in 0 1 2; do
+  for i in 0 1 2 3; do
 
     if [[ ${switches[i]} ]]; then
       set_prop switch_$((i + 1)) "${switches[i]}"
@@ -341,7 +337,7 @@ else
   touch $main_mod_path/update
   cp -f $mod_path/module.prop $main_mod_path
 
-  # Service mode scripts
+  # Service mode script
 
   unzip -oq "$zip_file" service.sh -d $mod_path
 

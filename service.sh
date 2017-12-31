@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Service
-# versionCode = 201712302
+# versionCode = 201712311
 # MCMotherEffin' @ XDA Developers
 
 # Define variables
@@ -14,7 +14,7 @@ getprop | grep product | tr -d [ | tr -d ] >$data_dir/device_info.inf
 
 # Set all the switches up
 
-for i in 1 2 3; do
+for i in 1 2 3 4; do
 
   switch=$(sed -n s/^switch_$i=//p $data_dir/settings.conf | awk '{print $1}')
 
@@ -26,9 +26,7 @@ for i in 1 2 3; do
   else break; fi
 done
 
-# Ensure service do not log verbosely,
-# wait for proper device initialization,
-# then trigger the service
+# Trigger the service after proper set-up
 
 export no_logging=true; sleep 90;
 (mcc --service_trigger) &

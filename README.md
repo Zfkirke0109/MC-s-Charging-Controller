@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712302
+###### versionCode = 201712311
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -100,28 +100,6 @@
 ### Changelog
 
 
-##### 2017.12.30-2
+##### Apple
 
-*  -- Fixed not all references found with the previous release
-
-##### 2017.12.30-1
-
-*  -- Wait for charger to connect
-
-##### 2017.12.29-1
-
-*  -- Forgot to run su first, no problem
-
-*  -- Expand [ --force ] to [ SHUT % ]
-
-*  -- Minor code improvements
-
-##### 2017.12.28-1
-
-*  -- Added [ --force ]
-
-*  -- A new format for logs
-
-*  -- Removed zip binaries
-
-*  -- Minor code improvements
+*  -- Minor improvements

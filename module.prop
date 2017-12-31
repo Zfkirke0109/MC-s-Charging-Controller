@@ -1,7 +1,7 @@
 id=mcc
 name=MC's Charging Controller (mcc)
-version=GUAVA
-versionCode=201712302
+version=Apple
+versionCode=201712311
 author=MCMotherEffin' @ XDA Developers
 description=A charging controller utility, for to extend battery life
 template=1400
