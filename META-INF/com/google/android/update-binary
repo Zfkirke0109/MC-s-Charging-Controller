@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201712311
+# versionCode = 201801011
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -60,7 +60,7 @@ imgsize_test() {
 set_perms_recursive() {
   find $1 | while read entry; do
     chown $2:$3 $entry
-    if [[ -f $entry ]]; then
+    if [[ ! -d $entry ]]; then
       chmod $4 $entry
     else
       chmod $5 $entry
@@ -79,7 +79,7 @@ if [ ! -x "$magisk_bb" ]; then
 fi
 
 for func in $($magisk_bb --list); do
-  alias $func="$magisk_bb $func" 2>/dev/null
+  alias $func="$magisk_bb $func"
 done
 
 # image is set here
@@ -98,7 +98,7 @@ fi
 
 for loop_device in /dev/block/loop*; do
 
-  if (losetup $loop_device | grep -q /data/.*magisk.img); then
+  if (losetup $loop_device | grep -q ${magisk_bb%/*/*}/magisk.img); then
 
     for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
 
@@ -260,9 +260,9 @@ else
   cur_ver_code=0
 fi
 
-# Flash again to uninstall
+# Detect whether to install / uninstall
 
-if [[ $cur_ver_code -ge 201712311 ]]; then
+if [[ $cur_ver_code -ge 201801011 ]]; then
 
   # Uninstall
 
@@ -287,7 +287,7 @@ else
     set_6=$(get_prop shut_threshold $old_conf)
   fi
 
-  # Create a clean module path
+  # Create a clean path
 
   rm -rf $mod_path 2>/dev/null
   mkdir $mod_path

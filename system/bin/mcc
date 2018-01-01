@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201712311
+# versionCode = 201801011
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -38,11 +38,11 @@ else
   system=/system
 fi
 
-# Detect MAGISK mountpoint
+# Detect MAGISK mount point
 
 for loop_device in /dev/block/loop*; do
 
-  if (losetup $loop_device | grep -q /data/.*magisk.img); then
+  if (losetup $loop_device | grep -q ${magisk_bb%/*/*}/magisk.img); then
 
     for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
 
@@ -252,7 +252,8 @@ set_ctrl_refs() {
 
       while ! (is_charging); do
         echo -e "(!) Please connect the charger\n"; sleep 5;
-      done; sleep 1
+      done
+      sleep 1; alias echo='echo 2>/dev/null';
 
       ## cycling through all,
       ## get a boolean switch
@@ -314,7 +315,7 @@ set_ctrl_refs() {
       done
       if [[ $i -gt 1 ]]; then break; fi
     fi
-  done <$sys_cache
+  done <$sys_cache; unalias echo
 
   if [[ $i -gt 1 ]]; then
     test_toggle daemon_mode "Daemon mode"
@@ -400,7 +401,7 @@ if ($(ver_logs)); then
       echo -e "(!) Verbose logs are enabled\n"
 
       getprop | grep product | tr -d [ | tr -d ] >$ver_log
-      echo -e "\nmcc_versionCode = 201712311\n" >>$ver_log
+      echo -e "\nmcc_versionCode = 201801011\n" >>$ver_log
       set -x 2>>$ver_log
     fi
   fi
@@ -498,7 +499,7 @@ case $1 in
     done
 
     echo -e "- Done\n"
-    echo -e "(!) Please upload $out_log to the official XDA thread\n"
+    echo -e "(!) Please PM me $out_log at XDA Developers\n"
       ;;
 
 ## reset battery stats

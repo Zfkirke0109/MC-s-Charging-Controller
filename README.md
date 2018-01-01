@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201712311
+###### versionCode = 201801011
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -17,76 +17,76 @@
 
 ##### Arguments can be
 
--      [ DISABLE % ] [ ENABLE % ]
+-         [ DISABLE % ] [ ENABLE % ]
 
--          :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
--          :- [ ENABLE % ] is optional
--          :-   Defaults :- 70 60
+-             :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
+-             :- [ ENABLE % ] is optional
+-             :-   Defaults :- 70 60
 
--      [ --shut ] [ SHUT % ]
+-         [ --shut ] [ SHUT % ]
 
--          :- Set threshold ( % ) for automatically powering the device off
--          :-   Default  :- 20
+-             :- Set threshold ( % ) for automatically powering the device off
+-             :-   Default  :- 20
 
--      [ --force ] [ ARGS ACCORDINGLY ].....
+-         [ --force ] [ ARGS ACCORDINGLY ].....
 
--          :- Same as [ DISABLE % ] [ ENABLE % ] or [ --shut ] [ SHUT % ],
--                  except for no limitations are applied
+-             :- Same as [ DISABLE % ] [ ENABLE % ] or [ --shut ] [ SHUT % ],
+-             :-     except for no limitations are applied
 
--      [ --keep ] [ KEEP % ]
+-         [ --keep ] [ KEEP % ]
 
--          :- Keep battery level at certain [ KEEP % ]
+-             :- Keep battery level at certain [ KEEP % ]
 
--      [ --enable ] [ % / time ]
+-         [ --enable ] [ % / time ]
 
--          :- Enable charging for given time / until certain % 
--          :- [ % / time ] is optional
--          :-   Time can be 30 ( 30 seconds ),
--                           8m (  8 minutes ),
--                           2h (   2 hours  );
+-             :- Enable charging for given time / until certain % 
+-             :- [ % / time ] is optional
+-             :-   Time can be 30 ( 30 seconds ),
+-                              8m (  8 minutes ),
+-                              2h (   2 hours  );
 
--      [ --disable ] [ % / time ]
+-         [ --disable ] [ % / time ]
 
--          :- Same as above, except for charging is disabled
+-             :- Same as above, except for charging is disabled
 
--      [ --daemon ]
+-         [ --daemon ]
 
--          :- Toggle MAGISK daemon mode ON / OFF
--          :-   Default  :- ON
+-             :- Toggle MAGISK daemon mode ON / OFF
+-             :-   Default  :- ON
 
--      [ --autoshut ]
+-         [ --autoshut ]
 
--          :- Toggle automatic power-off ON / OFF
--          :-   Default  :- ON
+-             :- Toggle automatic power-off ON / OFF
+-             :-   Default  :- ON
 
--      [ --verbose ]
+-         [ --verbose ]
 
--          :- Toggle verbose logs ON / OFF
--          :-   Default  :- OFF
+-             :- Toggle verbose logs ON / OFF
+-             :-   Default  :- OFF
 
--      [ --default ]
+-         [ --default ]
 
--          :- Reset all thresholds to defaults
+-             :- Reset all thresholds to defaults
 
--      [ --info ]
+-         [ --info ]
 
--          :- Show some useful information
+-             :- Show some useful information
 
--      [ --statreset ]
+-         [ --statreset ]
 
--          :- Reset battery statistics
+-             :- Reset battery statistics
 
--      [ --reconf ]
+-         [ --reconf ]
 
--          :- Re-configure kernel references
+-             :- Re-configure kernel references
 
--      [ --debug ]
+-         [ --debug ]
 
--          :- Gather debugging data
+-             :- Gather debugging data
 
--      [ --help ]
+-         [ --help ]
 
--          :- Show this help message
+-             :- Show this help message
 
 
 ##### Notes :-
@@ -99,6 +99,10 @@
 
 ### Changelog
 
+
+##### Alpha
+
+*  -- Fixed echo error
 
 ##### Apple
 
