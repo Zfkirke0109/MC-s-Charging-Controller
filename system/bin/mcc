@@ -1,12 +1,12 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201801011
+# versionCode = 201801021
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
 
-if ! (id | grep -iq uid=0); then
+if ! (id | grep -q uid=0); then
   su -c mcc $@; exit $?;
 else
   echo ' '
@@ -22,7 +22,7 @@ if [ ! "$no_logging" ]; then
 magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
 
 if [ ! -x "$magisk_bb" ]; then
-  echo -e "(!) Could not find MAGISK internal BusyBox\n"
+  echo -e "(!) Could not find Magisk internal BusyBox\n"
   exit 1
 fi
 
@@ -38,7 +38,7 @@ else
   system=/system
 fi
 
-# Detect MAGISK mount point
+# Detect Magisk mount point
 
 for loop_device in /dev/block/loop*; do
 
@@ -60,7 +60,7 @@ done
 if [[ ! -z $mount_point ]]; then
   mod_dir=$mount_point/mcc
 else
-  echo -e "(!) Could not find MAGISK mount point\n"
+  echo -e "(!) Could not find Magisk mount point\n"
   exit 1
 fi
 
@@ -75,6 +75,14 @@ ver_log=$data_dir/verbose.log
 ## yields an error and exits 1
 
 error() { echo -e "(!) $1\n"; exit 1; }
+
+## logs a file content to the logfile
+
+log_file() {
+  echo -e "Filename :- $1\n\n" >>"$out_log"
+  cat $1 >>"$out_log"
+  echo -e "\n\n\n\n\n\n\n\n\n\n\n" >>"$out_log"
+}
 
 ## gets a property from a prop file
 
@@ -401,7 +409,7 @@ if ($(ver_logs)); then
       echo -e "(!) Verbose logs are enabled\n"
 
       getprop | grep product | tr -d [ | tr -d ] >$ver_log
-      echo -e "\nmcc_versionCode = 201801011\n" >>$ver_log
+      echo -e "\nmcc_versionCode = 201801021\n" >>$ver_log
       set -x 2>>$ver_log
     fi
   fi
@@ -487,15 +495,10 @@ case $1 in
     rm -f "$out_log"
     echo -e "(i) Gathering debugging data...\n"
 
-    echo -e "Filename :- /cache/mcc_init.log\n\n" >"$out_log"
-    cat /cache/mcc_init.log >>"$out_log"
-    echo -e "\n\n\n\n\n\n\n\n\n\n\n" >>"$out_log"
+    log_file /cache/mcc_init.log
     
     find $mod_dir -type f | while read entry; do
-
-      echo -e "Filename :- $entry\n\n" >>"$out_log"
-      cat $entry >>"$out_log"
-      echo -e "\n\n\n\n\n\n\n\n\n\n\n" >>"$out_log"
+      log_file $entry
     done
 
     echo -e "- Done\n"
@@ -566,7 +569,7 @@ case $1 in
   --disable) charge disable $2
       ;;
 
-## trigger service ( MAGISK )
+## trigger service ( Magisk )
 
   --service_trigger)
 
@@ -632,6 +635,7 @@ case $1 in
 
     if [[ ! -z $2 ]]; then
       test_level $2; test_level $1;
+
       if [[ $2 -gt $1 ]]; then
         test_diff $2 $1; test_update_udt $2 $1;
       else

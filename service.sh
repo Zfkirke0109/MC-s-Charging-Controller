@@ -1,8 +1,12 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Service
-# versionCode = 201801011
+# versionCode = 201801021
 # MCMotherEffin' @ XDA Developers
+
+# Verbose logger
+
+set -x 2>${0%/*}/service_verbose.log
 
 # Define variables
 

@@ -1,24 +1,24 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201801011
+# versionCode = 201801021
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
 
 if ! (ps | grep zygote | grep -qv grep); then
-  boot_mode=false
+  is_boot_mode=false
 
   if (ps -A 2>/dev/null | grep zygote | grep -qv grep); then
-    boot_mode=true; fi
+    is_boot_mode=true; fi
 else
-  boot_mode=true
+  is_boot_mode=true
 fi
 
 # Abort if recovery installation
 # ( kernel compatibility issues )
 
-if ! ($boot_mode); then
+if ! ($is_boot_mode); then
 
   output_fd=$2
   ui_print() {
@@ -45,17 +45,7 @@ image=      # image will be found and set later
 
 error() { echo -e "(!) $1\n"; exit 1; }
 
-get_prop() { sed -n s/^$1=//p $2; }
-
-set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
-
-is_mounted() { grep -q " $1 " /proc/mounts; }
-
 is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
-
-imgsize_test() {
-  e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
-}
 
 set_perms_recursive() {
   find $1 | while read entry; do
@@ -74,8 +64,8 @@ set_perms_recursive() {
 magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
 
 if [ ! -x "$magisk_bb" ]; then
-  echo -e "(!) Could not find MAGISK internal BusyBox\n"
-  error 'Please install MAGISK v14.0+'
+  echo -e "(!) Could not find Magisk internal BusyBox\n"
+  error 'Please install Magisk v14.0+'
 fi
 
 for func in $($magisk_bb --list); do
@@ -94,7 +84,7 @@ else
   system=/system
 fi
 
-# Detect MAGISK mount point
+# Detect Magisk mount point
 
 for loop_device in /dev/block/loop*; do
 
@@ -116,7 +106,7 @@ done
 if [[ ! -z $mount_point ]]; then
   main_mod_path=$mount_point/mcc
 else
-  error 'Could not find MAGISK mount point'
+  error 'Could not find Magisk mount point'
 fi
 
 # Print module name
@@ -214,11 +204,15 @@ fi
 if [[ -f $image ]]; then
   echo -e "(i) $image detected\n"
 
+  imgsize_test() {
+    e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
+  }
+
   img_used=$(imgsize_test 1)
   img_total=$(imgsize_test 2)
   img_free=$((img_total - img_used))
 
-  if [[ ! $img_free -gt 1 ]]; then
+  if [[ ! $img_free -gt 0 ]]; then
     imgsize_new=$(((img_used + 1) / 32 * 32 + 64))
     echo -e "(i) Resizing $image to ${imgsize_new}M...\n"
     resize2fs $image ${imgsize_new}M
@@ -243,12 +237,15 @@ for loop in 0 1 2 3 4 5 6 7; do
   if (losetup $loop_device $image); then
     mount -t ext4 -o loop $loop_device $mount_path; fi
 
-  if (is_mounted $mount_path); then break; fi
+  is_mounted() { grep -q " $mount_path " /proc/mounts; }
+  if (is_mounted); then break; fi
 done
-if ! (is_mounted $mount_path); then
+if ! (is_mounted); then
   error "Could not mount $image"; fi
 
 # Detect whether installed or not
+
+get_prop() { sed -n s/^$1=//p $2; }
 
 if [[ -f $mod_path/module.prop ]]; then
   cur_ver_code=$(get_prop versionCode $mod_path/module.prop)
@@ -262,7 +259,7 @@ fi
 
 # Detect whether to install / uninstall
 
-if [[ $cur_ver_code -ge 201801011 ]]; then
+if [[ $cur_ver_code -ge 201801021 ]]; then
 
   # Uninstall
 
@@ -302,6 +299,8 @@ else
 
   if [[ ! -z $set_1 ]]; then
     echo -e "(i) Restoring old settings...\n"
+
+    set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
 
     set_prop ver_logs $set_1
     set_prop auto_shut $set_2
@@ -343,8 +342,8 @@ else
 
   echo -e "(i) Setting permissions...\n"
 
-  set_perms_recursive $mod_path 0 0 644 755
-  set_perms_recursive $mod_path/system/bin 0 2000 755 755
+  set_perms_recursive $mod_path 0 0 0644 0755
+  set_perms_recursive $mod_path/system/bin 0 2000 0755 0755
 fi
 
 # Unmount the image

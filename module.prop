@@ -1,7 +1,7 @@
 id=mcc
 name=MC's Charging Controller (mcc)
-version=Alpha
-versionCode=201801011
+version=Beta
+versionCode=201801021
 author=MCMotherEffin' @ XDA Developers
 description=A charging controller utility, for to extend battery life
 template=1400
