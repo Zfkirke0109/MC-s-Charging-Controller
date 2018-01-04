@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201801021
+###### versionCode = 201801041
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -100,6 +100,11 @@
 ### Changelog
 
 
+##### Cupcake
+
+*  -- Moved installation path to /system/xbin,
+*  ----  better for non-system executables
+
 ##### Beta
 
 *  -- Fixed bugs for some devices while installing
@@ -111,7 +116,3 @@
 ##### Alpha
 
 *  -- Fixed echo error
-
-##### Apple
-
-*  -- Minor improvements

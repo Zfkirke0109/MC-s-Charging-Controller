@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201801021
+# versionCode = 201801041
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -16,7 +16,7 @@ else
 fi
 
 # Abort if recovery installation
-# ( kernel compatibility issues )
+#     ( kernel compatibility issues )
 
 if ! ($is_boot_mode); then
 
@@ -139,7 +139,7 @@ while read uevent; do
     i=0
     for ref in ${uevent%/*}/*; do
       if [[ -f $ref ]]; then
-      chown 0:0 $ref; chmod 644 $ref;
+      chown 0:0 $ref; chmod 0644 $ref;
       else continue; fi
 
       case $(cat $ref) in
@@ -231,8 +231,10 @@ mkdir $mount_path
 for loop in 0 1 2 3 4 5 6 7; do
   loop_device=/dev/block/loop$loop
 
-  if [[ ! -f $loop_device && ! -b $loop_device ]]; then
-    mknod $loop_device b 7 $loop; fi
+  if [[ ! -f $loop_device ]]; then
+    if [[ ! -b $loop_device ]]; then
+      mknod $loop_device b 7 $loop; fi
+  fi
 
   if (losetup $loop_device $image); then
     mount -t ext4 -o loop $loop_device $mount_path; fi
@@ -259,7 +261,7 @@ fi
 
 # Detect whether to install / uninstall
 
-if [[ $cur_ver_code -ge 201801021 ]]; then
+if [[ $cur_ver_code -ge 201801041 ]]; then
 
   # Uninstall
 
