@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Service
-# versionCode = 201801041
+# versionCode = 201801042
 # MCMotherEffin' @ XDA Developers
 
 # Verbose logger

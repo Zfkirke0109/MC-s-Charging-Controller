@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201801041
+###### versionCode = 201801042
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -100,6 +100,10 @@
 ### Changelog
 
 
+##### Cupcake-2
+
+*  -- Fixed 'permission denied'
+
 ##### Cupcake
 
 *  -- Moved installation path to /system/xbin,
@@ -112,7 +116,3 @@
 *  -- Enabled service logging ( partially )
 
 *  -- Minor improvements
-
-##### Alpha
-
-*  -- Fixed echo error
