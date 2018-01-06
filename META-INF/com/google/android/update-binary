@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201801063
+# versionCode = 201801064
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -95,16 +95,12 @@ echo -e "(!) Please make sure the device is charging\n"
 sleep 5
 echo -e "(i) Checking compatibility...\n"
 mkdir ${tmp_file%/*}
-echo /sys/class/power_supply/battery/uevent >$tmp_file
-find /sys/devices -type f -name uevent | sort >>$tmp_file
+find /sys/devices -type f -name uevent | sort >$tmp_file
 
 is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
 
 while read uevent; do
   if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
-    while (! is_charging); do
-      echo -e "(!) Please connect the charger\n"; sleep 5;
-    done; sleep 1
     i=0
     for ref in ${uevent%/*}/*; do
       if [[ -f $ref ]]; then
@@ -221,7 +217,7 @@ else
 fi
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801063 ]]; then
+if [[ $cur_ver_code -ge 201801064 ]]; then
 
   # Uninstall
   echo -e "(i) Same or newer detected\n"

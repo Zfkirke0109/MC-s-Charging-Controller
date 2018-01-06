@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201801063
+###### versionCode = 201801064
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -100,6 +100,16 @@
 ### Changelog
 
 
+##### Donut-3
+
+*  -- Reverted 'Please connect the charger' while installing
+*  ----  just for if your kernel is not fully functional
+
+*  -- To HTC 10 owners,
+*  ----  your device provides only half of the functionality needed by mcc to work,
+*  ----  so, it might or might not work,
+*  ----  thanks to @JohnFawkes for testing
+
 ##### Donut-2
 
 *  -- I'm sorry guys,
@@ -113,9 +123,3 @@
 *  ----  added support for HTC 10, and likings
 *  ----  thanks to @tbalden and @JohnFawkes
 *  ----  for their co-operation
-
-##### Donut
-
-*  -- Minor code improvements
-
-*  -- Refactored coding style
