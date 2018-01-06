@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201801061
+# versionCode = 201801062
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -109,7 +109,8 @@ echo -e "(!) Please make sure the device is charging\n"
 sleep 5
 echo -e "(i) Checking compatibility...\n"
 mkdir ${tmp_file%/*}
-find /sys/devices -type f -name uevent | sort >$tmp_file
+echo /sys/class/power_supply/battery/uevent >$tmp_file
+find /sys/devices -type f -name uevent | sort >>$tmp_file
 while read uevent; do
   if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
     while (! is_charging); do
@@ -231,7 +232,7 @@ else
 fi
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801061 ]]; then
+if [[ $cur_ver_code -ge 201801062 ]]; then
 
   # Uninstall
   echo -e "(i) Same or newer detected\n"
@@ -244,7 +245,6 @@ else
   # Preserve old settings
   old_conf=$main_mod_path/data/settings.conf
   if [[ -f $old_conf ]]; then
-    echo -e "(i) Backing up old settings...\n"
     set_1=$(get_prop ver_logs $old_conf)
     set_2=$(get_prop auto_shut $old_conf)
     set_3=$(get_prop daemon_mode $old_conf)
