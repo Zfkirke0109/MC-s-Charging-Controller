@@ -1,6 +1,6 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201801062
+###### versionCode = 201801063
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -100,6 +100,13 @@
 ### Changelog
 
 
+##### Donut-2
+
+*  -- I'm sorry guys,
+*  ----  previous echo error fix was not working for some devices,
+*  ----  and also previous version caused power-offs for clean flashes,
+*  ----  this version will fix both these
+
 ##### Donut-1
 
 *  -- Faster reference finding for Generic devices
@@ -112,7 +119,3 @@
 *  -- Minor code improvements
 
 *  -- Refactored coding style
-
-##### Cupcake-2
-
-*  -- Fixed 'permission denied'

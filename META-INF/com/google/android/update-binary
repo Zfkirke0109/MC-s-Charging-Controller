@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201801062
+# versionCode = 201801063
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
@@ -40,20 +40,6 @@ image=      # image will be found and set later
 # Define universal functions
 
 error() { echo -e "(!) $1\n"; exit 1; }
-
-is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
-
-set_perms_recursive() {
-  find $1 | while read entry; do
-    chown $2:$3 $entry
-    if [[ ! -d $entry ]]; then
-      chmod $4 $entry
-    else
-      chmod $5 $entry
-    fi
-    chcon u:object_r:system_file:s0 $entry
-  done
-}
 
 # Set BusyBox up
 magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
@@ -111,6 +97,9 @@ echo -e "(i) Checking compatibility...\n"
 mkdir ${tmp_file%/*}
 echo /sys/class/power_supply/battery/uevent >$tmp_file
 find /sys/devices -type f -name uevent | sort >>$tmp_file
+
+is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
+
 while read uevent; do
   if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
     while (! is_charging); do
@@ -198,6 +187,9 @@ else
 fi
 
 # Mount the image
+
+is_mounted() { grep -q " $mount_path " /proc/mounts; }
+
 echo -e "(i) Mounting $image to $mount_path...\n"
 mkdir $mount_path
 for loop in 0 1 2 3 4 5 6 7; do
@@ -210,9 +202,6 @@ for loop in 0 1 2 3 4 5 6 7; do
   if (losetup $loop_device $image); then
     mount -t ext4 -o loop $loop_device $mount_path
   fi
-
-  is_mounted() { grep -q " $mount_path " /proc/mounts; }
-
   if (is_mounted); then break; fi
 done
 if (! is_mounted); then
@@ -232,7 +221,7 @@ else
 fi
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801062 ]]; then
+if [[ $cur_ver_code -ge 201801063 ]]; then
 
   # Uninstall
   echo -e "(i) Same or newer detected\n"
@@ -262,12 +251,11 @@ else
   unzip -o "$zip_file" 'system/*' 'data/*' -d $mod_path >&2
   unzip -o "$zip_file" README.md -d $mod_path/data >&2
 
+  set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
+
   # Set preserved settings
   if [[ ! -z $set_1 ]]; then
     echo -e "(i) Restoring old settings...\n"
-
-    set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
-
     set_prop ver_logs $set_1
     set_prop auto_shut $set_2
     set_prop daemon_mode $set_3
@@ -300,6 +288,19 @@ else
   # Service mode script
   unzip -o "$zip_file" service.sh -d $mod_path >&2
   echo -e "(i) Setting permissions...\n"
+
+set_perms_recursive() {
+  find $1 | while read entry; do
+    chown $2:$3 $entry
+    if [[ ! -d $entry ]]; then
+      chmod $4 $entry
+    else
+      chmod $5 $entry
+    fi
+    chcon u:object_r:system_file:s0 $entry
+  done
+}
+
   set_perms_recursive $mod_path 0 0 0644 0755
   set_perms_recursive $mod_path/system/xbin 0 2000 0755 0755
 fi
