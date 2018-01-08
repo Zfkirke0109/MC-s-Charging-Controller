@@ -1,13 +1,13 @@
 #!/sbin/sh
 # MC's Charging Controller (mcc)
 # mcc update-binary
-# versionCode = 201801064
+# versionCode = 201801081
 # MCMotherEffin' @ XDA Developers
 
 # Detect whether in boot mode
-if (! ps | grep zygote | grep -qv grep); then
+if (! ps | grep -v grep | grep -q zygote); then
   is_boot_mode=false
-  if (ps -A 2>/dev/null | grep zygote | grep -qv grep); then
+  if (ps -A 2>/dev/null | grep -v grep | grep -q zygote); then
     is_boot_mode=true
   fi
 else
@@ -15,7 +15,7 @@ else
 fi
 
 # Abort if recovery installation
-#     ( kernel compatibility issues )
+#     ( mcc controls charging while booted up )
 if (! $is_boot_mode); then
   fd=$2
 
@@ -23,7 +23,7 @@ if (! $is_boot_mode); then
 
   ui_print ' '
   ui_print ' '
-  ui_print '(!) Please install in boot mode'
+  ui_print '- Abort :- Please install in boot mode'
   ui_print ' '
   ui_print ' '
   exit 1
@@ -32,19 +32,19 @@ echo ' '
 
 # Define universal variables
 zip_file="$3"
-tmp_file=/dev/tmpdir_mcc/tmp_file
-mount_path=/dev/magisk_img_mcc
+tmp_file=/dev/mcc_tmp/file
+mount_path=/dev/mcc_img
 mod_path=$mount_path/mcc
 image=      # image will be found and set later
 
 # Define universal functions
 
-error() { echo -e "(!) $1\n"; exit 1; }
+error() { echo -e "- Abort :- $1\n"; exit 1; }
 
-# Set BusyBox up
+# Set busybox up
 magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
 if [ ! -x "$magisk_bb" ]; then
-  echo -e "(!) Could not find Magisk internal BusyBox\n"
+  echo -e "- Abort :- Could not find Magisk internal busybox\n"
   error 'Please install Magisk v14.0+'
 fi
 for func in $($magisk_bb --list); do
@@ -91,9 +91,9 @@ echo -e "------------------------------------------------\n"
 # Test compatibility and set references
 #    ( device must be charging throughout )
 #    ( see the Main Script for documentation )
-echo -e "(!) Please make sure the device is charging\n"
+echo -e "- Please make sure the device is charging\n"
 sleep 5
-echo -e "(i) Checking compatibility...\n"
+echo -e "- Checking compatibility...\n"
 mkdir ${tmp_file%/*}
 find /sys/devices -type f -name uevent | sort >$tmp_file
 
@@ -163,22 +163,21 @@ fi
 
 # Get the image ready for installation
 if [[ -f $image ]]; then
-  echo -e "(i) $image detected\n"
+  echo -e "- $image detected\n"
 
   imgsize_test() {
     e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
   }
-
   img_used=$(imgsize_test 1)
   img_total=$(imgsize_test 2)
   img_free=$((img_total - img_used))
   if [[ ! $img_free -gt 0 ]]; then
     imgsize_new=$(((img_used + 1) / 32 * 32 + 64))
-    echo -e "(i) Resizing $image to ${imgsize_new}M...\n"
+    echo -e "- Resizing $image...\n"
     resize2fs $image ${imgsize_new}M
   fi
 else
-  echo -e "(i) Creating $image of 64M...\n"
+  echo -e "- Creating $image...\n"
   make_ext4fs -l 64M $image >&2
 fi
 
@@ -186,7 +185,7 @@ fi
 
 is_mounted() { grep -q " $mount_path " /proc/mounts; }
 
-echo -e "(i) Mounting $image to $mount_path...\n"
+echo -e "- Mounting $image...\n"
 mkdir $mount_path
 for loop in 0 1 2 3 4 5 6 7; do
   loop_device=/dev/block/loop$loop
@@ -217,11 +216,11 @@ else
 fi
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801064 ]]; then
+if [[ $cur_ver_code -ge 201801081 ]]; then
 
   # Uninstall
-  echo -e "(i) Same or newer detected\n"
-  echo -e "(!) Uninstalling...\n"
+  echo -e "- Same or newer detected\n"
+  echo -e "- Attention :- Uninstalling...\n"
   rm -rf $mod_path $main_mod_path 2>/dev/null
 else
 
@@ -239,11 +238,10 @@ else
   fi
 
   # Create a clean path
-  rm -rf $mod_path 2>/dev/null
-  mkdir $mod_path
+  rm -rf $mod_path 2>/dev/null; mkdir $mod_path;
 
-  # Extract files
-  echo -e "(i) Extracting module files...\n"
+  # Extract module files
+  echo -e "- Extracting module files...\n"
   unzip -o "$zip_file" 'system/*' 'data/*' -d $mod_path >&2
   unzip -o "$zip_file" README.md -d $mod_path/data >&2
 
@@ -251,7 +249,7 @@ else
 
   # Set preserved settings
   if [[ ! -z $set_1 ]]; then
-    echo -e "(i) Restoring old settings...\n"
+    echo -e "- Restoring settings...\n"
     set_prop ver_logs $set_1
     set_prop auto_shut $set_2
     set_prop daemon_mode $set_3
@@ -283,20 +281,19 @@ else
 
   # Service mode script
   unzip -o "$zip_file" service.sh -d $mod_path >&2
-  echo -e "(i) Setting permissions...\n"
+  echo -e "- Setting permissions...\n"
 
-set_perms_recursive() {
-  find $1 | while read entry; do
-    chown $2:$3 $entry
-    if [[ ! -d $entry ]]; then
-      chmod $4 $entry
-    else
-      chmod $5 $entry
-    fi
-    chcon u:object_r:system_file:s0 $entry
-  done
-}
-
+  set_perms_recursive() {
+    find $1 | while read entry; do
+      chown $2:$3 $entry
+      if [[ ! -d $entry ]]; then
+        chmod $4 $entry
+      else
+        chmod $5 $entry
+      fi
+      chcon u:object_r:system_file:s0 $entry
+    done
+  }
   set_perms_recursive $mod_path 0 0 0644 0755
   set_perms_recursive $mod_path/system/xbin 0 2000 0755 0755
 fi

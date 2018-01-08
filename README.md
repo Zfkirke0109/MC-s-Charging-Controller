@@ -1,17 +1,15 @@
 ###### MC's Charging Controller (mcc)
 ###### mcc README
-###### versionCode = 201801064
+###### versionCode = 201801081
 ###### MCMotherEffin' @ XDA Developers
-
 
 ### Into
 
-
 ##### It is meant for to extend Lithium batteries' life by controlling charging
 
+##### It is inspired from @VR25's 'Magic Charging Switch'
 
 ### Usage
-
 
 ##### mcc [ ARG_1 ] [ ARG_2 ] .....
 
@@ -88,17 +86,26 @@
 
 -             :- Show this help message
 
-
-##### Notes :-
-
+### Notes
 
 *    --  It requires your device to be charging while installing / [ --reconf ] for to detect where to hook into kernel
 
-*    --  Running just "mcc" will reset up_threshold and down_threshold to defaults
+*    --  Service will be triggered some later booting the device, so, you get a chance to toggle automatic power-off OFF
 
+*    --  Running just 'mcc' will reset up_threshold and down_threshold to defaults
+
+### Request
+
+*    --  I'm an Indian, so please forgive me some bad English,
+*    ----  also I'm not an artist, so please forgive me some bad UI ( shell ),
+*    ----  addressing both the above, I welcome you to suggest me what the UI should be alike
+*    ----  and what the strings really should be
 
 ### Changelog
 
+##### Eclair
+
+*  -- A new format for the UI
 
 ##### Donut-3
 
@@ -108,7 +115,7 @@
 *  -- To HTC 10 owners,
 *  ----  your device provides only half of the functionality needed by mcc to work,
 *  ----  so, it might or might not work,
-*  ----  thanks to @JohnFawkes for testing
+*  ----  thanks to @JohnFawkes for his co-operation with debugging
 
 ##### Donut-2
 
@@ -116,10 +123,3 @@
 *  ----  previous echo error fix was not working for some devices,
 *  ----  and also previous version caused power-offs for clean flashes,
 *  ----  this version will fix both these
-
-##### Donut-1
-
-*  -- Faster reference finding for Generic devices
-*  ----  added support for HTC 10, and likings
-*  ----  thanks to @tbalden and @JohnFawkes
-*  ----  for their co-operation

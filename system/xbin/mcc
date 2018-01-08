@@ -1,25 +1,24 @@
 #!/system/bin/sh
 # MC's Charging Controller (mcc)
 # mcc Main Script
-# versionCode = 201801064
+# versionCode = 201801081
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
 if (! id | grep -q uid=0); then
   su -c mcc $@; exit $?;
-else
-  echo ' '
 fi
 
 # Initial verbose logger
 if [ ! "$no_logging" ]; then
   set -x 2>/cache/mcc_init.log
 fi
+echo ' '
 
-# Set BusyBox up
+# Set busybox up
 magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
 if [ ! -x "$magisk_bb" ]; then
-  echo -e "(!) Could not find Magisk internal BusyBox\n"
+  echo -e "- Abort :- Could not find Magisk internal busybox\n"
   exit 1
 fi
 for func in $($magisk_bb --list); do
@@ -51,7 +50,7 @@ done
 if [[ ! -z $mount_point ]]; then
   mod_dir=$mount_point/mcc
 else
-  echo -e "(!) Could not find Magisk mount point\n"
+  echo -e "- Abort :- Could not find Magisk mount point\n"
   exit 1
 fi
 
@@ -64,7 +63,7 @@ ver_log=$data_dir/verbose.log
 
 ## yields an error and exits 1
 
-error() { echo -e "(!) $1\n"; exit 1; }
+error() { echo -e "- Abort :- $1\n"; exit 1; }
 
 ## logs a file content to the logfile
 
@@ -122,7 +121,7 @@ test_diff() {
 test_toggle() {
   if (! $($1)); then
     set_prop $1 true
-    echo -e "(!) $2 toggled ON\n"
+    echo -e "- Attention :- $2 toggled ON\n"
   fi
 }
 
@@ -134,7 +133,7 @@ toggle() {
   else
     value=true; status=ON;
   fi
-  echo -e "(i) Toggling $2 $status...\n"
+  echo -e "- Toggling $2 $status...\n"
   set_prop $1 $value
   echo -e "- Done\n"
 }
@@ -163,7 +162,7 @@ switch_() {
 override_daemon() {
   if ($(daemon_mode)); then
     set_prop daemon_mode false
-    echo -e "(!) Daemon mode overridden\n"
+    echo -e "- Attention :- Daemon mode overridden\n"
   fi
 }
 
@@ -226,18 +225,16 @@ set_ctrl_refs() {
   for i in 1 2 3 4; do
     set_prop switch_$i 'not_found_yet dummy_ON dummy_OFF'
   done
-  echo -e "(!) Please make sure the device is charging\n"
+  echo -e "- Attention :- Please make sure the device is charging\n"
   sleep 5
 
   ## get all possible references
-  echo -e "(i) Re-configuring kernel references...\n"
+  echo -e "- Re-configuring kernel references...\n"
   if [[ ! -f $uevent_cache ]]; then
     find /sys/devices -type f -name uevent | sort >$uevent_cache
   fi
 
-  ## echo error fix
-
-  echo_fixed() { echo $1 >$2 2>/dev/null; }
+  echo_write() { echo $1 >$2 2>/dev/null; }
 
   while read uevent; do
 
@@ -248,8 +245,9 @@ set_ctrl_refs() {
 
       ## ask and wait for charger,
       ## unless charging
+      ##      ( mcc in installed, thus is safe )
       while (! is_charging); do
-        echo -e "(!) Please connect the charger\n"; sleep 5;
+        echo -e "- Caution :- Device seem not charging\n"; sleep 5;
       done; sleep 1
 
       ## cycling through all,
@@ -261,34 +259,34 @@ set_ctrl_refs() {
       else continue; fi
         case $(cat $ref) in
           1)
-            echo_fixed 0 $ref
+            echo_write 0 $ref
             c_ON=1; c_OFF=0;              ;;
           0)
-            echo_fixed 1 $ref
+            echo_write 1 $ref
             c_ON=0; c_OFF=1;              ;;
           on)
-            echo_fixed off $ref
+            echo_write off $ref
             c_ON=on; c_OFF=off;           ;;
           off)
-            echo_fixed on $ref
+            echo_write on $ref
             c_ON=off; c_OFF=on;           ;;
           true)
-            echo_fixed false $ref
+            echo_write false $ref
             c_ON=true; c_OFF=false;       ;;
           false)
-            echo_fixed true $ref
+            echo_write true $ref
             c_ON=false; c_OFF=true;       ;;
           enable)
-            echo_fixed disable $ref
+            echo_write disable $ref
             c_ON=enable; c_OFF=disable;   ;;
           disable)
-            echo_fixed enable $ref
+            echo_write enable $ref
             c_ON=disable; c_OFF=enable;   ;;
           enabled)
-            echo_fixed disabled $ref
+            echo_write disabled $ref
             c_ON=enabled; c_OFF=disabled; ;;
           disabled)
-            echo_fixed enabled $ref
+            echo_write enabled $ref
             c_ON=disabled; c_OFF=enabled; ;;
           *)
             continue                      ;;
@@ -297,7 +295,7 @@ set_ctrl_refs() {
         ## test if that works correctly,
         ## if yes add it, else continue
         if (! is_charging); then
-          echo_fixed $c_ON $ref; sleep 0.2;
+          echo_write $c_ON $ref; sleep 0.2;
           if (is_charging); then
             set_prop switch_$i "$ref $c_ON $c_OFF"
             ((i += 1)); if [[ $i -eq 5 ]]; then
@@ -305,7 +303,7 @@ set_ctrl_refs() {
             fi
           fi
         fi
-        echo_fixed $c_ON $ref
+        echo_write $c_ON $ref
       done
       if [[ $i -gt 1 ]]; then break; fi
     fi
@@ -320,7 +318,7 @@ set_ctrl_refs() {
     set_prop uevent not_found_yet
     if ($(auto_shut)); then
       set_prop auto_shut false
-      echo -e "(!) Automatic power-off toggled OFF\n"
+      echo -e "- Attention :- Automatic power-off toggled OFF\n"
     fi
     error "Your kernel don't support these functionalities"
   fi
@@ -344,7 +342,7 @@ charge() {
       if (eval $test); then
         switch_ $turn_1
       fi
-      echo -e "(i) Charging $text until $threshold%...\n"
+      echo -e "- Charging $text until $threshold%...\n"
       while eval [[ \$\(batt_level\) $op \$threshold ]]; do
         if (eval $test); then
           switch_ $turn_1
@@ -357,7 +355,7 @@ charge() {
       if (eval $test); then
         switch_ $turn_1
       fi
-      echo -e "(i) Charging $text until $2...\n"
+      echo -e "- Charging $text for $2...\n"
       sleep $2
       switch_ $turn_2
     else
@@ -368,7 +366,7 @@ charge() {
     if (eval $test); then
       switch_ $turn_1
     fi
-    echo -e "(i) Charging $text\n"
+    echo -e "- Charging $text\n"
   fi
 }
 
@@ -380,11 +378,11 @@ if ($(ver_logs)); then
   if [[ $1 != --verbose ]]; then
     if [[ ! $no_logging ]]; then
       if [[ -f $ver_log ]]; then
-        mv -f $ver_log $data_dir/last_verbose.log
+        mv -f $ver_log $data_dir/verbose_last.log
       fi
-      echo -e "(!) Verbose logs are enabled\n"
+      echo -e "- Attention :- Verbose logs are enabled\n"
       getprop | grep product | tr -d [ | tr -d ] >$ver_log
-      echo -e "\nmcc_versionCode = 201801064\n" >>$ver_log
+      echo -e "\nmcc_versionCode = 201801081\n" >>$ver_log
       set -x 2>>$ver_log
     fi
   fi
@@ -436,7 +434,7 @@ case $1 in
     if ($(auto_shut)); then status=ON;
     else status=OFF; fi
     echo -e "-- automatic power-off :- $status\n"
-      ;;
+  ;;
 
 ## manpage
   --help)
@@ -447,46 +445,46 @@ case $1 in
         break
       fi
     done <$data_dir/README.md
-      ;;
+  ;;
 
 ## re-test and configure kernel references
   --reconf) set_ctrl_refs
-      ;;
+  ;;
 
 ## debugging on demand, output in /cache
   --debug)
     out_log=/cache/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".log
     rm -f "$out_log"
-    echo -e "(i) Gathering debugging data...\n"
+    echo -e "- Gathering debugging data...\n"
     log_file /cache/mcc_init.log
     find $mod_dir -type f | while read entry; do
       log_file $entry
     done
     echo -e "- Done\n"
-    echo -e "(!) Please PM me $out_log at XDA Developers\n"
-      ;;
+    echo -e "- Request :- Please PM me $out_log at XDA Developers\n"
+  ;;
 
 ## reset battery stats
   --statreset)
-    echo -e "(i) Resetting battery statistics...\n"
+    echo -e "- Resetting battery statistics...\n"
     dumpsys batterysats --reset >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
       rm -f /data/system/batterystats.bin
     fi
     echo -e "- Done\n"
-      ;;
+  ;;
 
 ## toggle verbose logs
   --verbose) toggle ver_logs 'verbose logs'
-      ;;
+  ;;
 
 ## toggle auto shut
   --autoshut) toggle auto_shut 'automatic power-off'
-      ;;
+  ;;
 
 ## toggle daemon mode
   --daemon) toggle daemon_mode 'daemon mode'
-      ;;
+  ;;
 
 ## keep battery level at certain level
   --keep)
@@ -495,7 +493,7 @@ case $1 in
     if (! is_charging); then
       switch_ ON
     fi
-    echo -e "(i) Battery level will be kept at $2%\n"
+    echo -e "- Battery level will be kept at $2%\n"
     while(:); do
       if [[ $(batt_level) -lt $2 ]]; then
         if (! is_charging); then
@@ -508,17 +506,17 @@ case $1 in
       fi
       sleep 30
     done
-      ;;
+  ;;
 
 ## enable charging ( on demand / or for
 ## certain % / time )
   --enable) charge enable $2
-      ;;
+  ;;
 
 ## disable charging ( on demand / or for
 ## certain % / time )
   --disable) charge disable $2
-      ;;
+  ;;
 
 ## trigger service ( Magisk )
   --service_trigger)
@@ -543,15 +541,15 @@ case $1 in
       fi
       sleep 30
     done
-      ;;
+  ;;
 
 ## thresholds back to defaults
   --default)
     set_prop shut_threshold 20
     set_prop up_threshold 70
     set_prop down_threshold 60
-    echo -e "- Reverted all to defaults\n"
-     ;;
+    echo -e "- Reverted all the thresholds to defaults\n"
+ ;;
 
 ## update auto shut threshold
   --shut)
@@ -567,7 +565,7 @@ case $1 in
     set_prop shut_threshold $2
     echo -e "- New value saved\n"
     test_toggle auto_shut 'Automatic power-off'
-      ;;
+  ;;
 
 ## update previous thresholds
   *)
@@ -586,9 +584,9 @@ case $1 in
     else
       set_prop up_threshold 70
       set_prop down_threshold 60
-      echo -e "- Reverted to defaults, except for shut threshold\n"
+      echo -e "- Reverted up, down_threshold to defaults\n"
     fi
     test_toggle daemon_mode 'Daemon mode'
-      ;;
+  ;;
 esac
 exit 0
