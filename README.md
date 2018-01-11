@@ -1,125 +1,102 @@
-###### MC's Charging Controller (mcc)
+###### MC's Charging Controller
 ###### mcc README
-###### versionCode = 201801081
+###### versionCode = 201801111
 ###### MCMotherEffin' @ XDA Developers
 
 ### Into
 
 ##### It is meant for to extend Lithium batteries' life by controlling charging
 
+##### It allows you to turn charging ON / OFF as per your mood, taking as time, level or on demand
+
+##### It also allows you to perform a battery stats reset
+
 ##### It is inspired from @VR25's 'Magic Charging Switch'
 
 ### Usage
 
-##### mcc [ ARG_1 ] [ ARG_2 ] .....
+##### mcc [ ARG_1 ] [ ARG_2 ].....
 
 ##### Arguments can be
-
--         [ DISABLE % ] [ ENABLE % ]
-
--             :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
--             :- [ ENABLE % ] is optional
--             :-   Defaults :- 70 60
-
--         [ --shut ] [ SHUT % ]
-
--             :- Set threshold ( % ) for automatically powering the device off
--             :-   Default  :- 20
-
--         [ --force ] [ ARGS ACCORDINGLY ].....
-
--             :- Same as [ DISABLE % ] [ ENABLE % ] or [ --shut ] [ SHUT % ],
--             :-     except for no limitations are applied
-
--         [ --keep ] [ KEEP % ]
-
--             :- Keep battery level at certain [ KEEP % ]
-
--         [ --enable ] [ % / time ]
-
--             :- Enable charging for given time / until certain % 
--             :- [ % / time ] is optional
--             :-   Time can be 30 ( 30 seconds ),
--                              8m (  8 minutes ),
--                              2h (   2 hours  );
-
--         [ --disable ] [ % / time ]
-
--             :- Same as above, except for charging is disabled
-
--         [ --daemon ]
-
--             :- Toggle MAGISK daemon mode ON / OFF
--             :-   Default  :- ON
-
--         [ --autoshut ]
-
--             :- Toggle automatic power-off ON / OFF
--             :-   Default  :- ON
-
--         [ --verbose ]
-
--             :- Toggle verbose logs ON / OFF
--             :-   Default  :- OFF
-
--         [ --default ]
-
--             :- Reset all thresholds to defaults
-
--         [ --info ]
-
--             :- Show some useful information
-
--         [ --statreset ]
-
--             :- Reset battery statistics
-
--         [ --reconf ]
-
--             :- Re-configure kernel references
-
--         [ --debug ]
-
--             :- Gather debugging data
-
--         [ --help ]
-
--             :- Show this help message
+*
+*  --       [ --reset ] [ DISABLE % ] [ ENABLE % ]
+*
+*  --           :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
+*  --           :- [ ENABLE % ] is optional
+*  --           :-   Defaults :- 70 60
+*
+*  --       [ --shut ] [ SHUT % ]
+*
+*  --           :- Set threshold ( % ) for automatically powering the device OFF
+*  --           :-   Default  :- 20
+*
+*  --       [ --force ] [ ARGS ACCORDINGLY ].....
+*
+*  --           :- Same as [ --reset ] [ DISABLE % ] [ ENABLE % ]
+*  --           :-      or [ --shut ] [ SHUT % ],
+*  --           :-      Except for no limitations are applied
+*
+*  --       [ --enable ] [ % / time ]
+*
+*  --           :- Enable charging for given time / until certain % 
+*  --           :- [ % / time ] is optional
+*  --           :-   Time can be 30 ( 30 seconds ), 8m ( 8 minutes ) or 2h ( 2 hours )
+*  --           :-   Level can be 60%, 55% or 19%
+*
+*  --       [ --disable ] [ % / time ]
+*
+*  --           :- Same as above, except for charging is disabled
+*
+*  --       [ --daemon ]
+*
+*  --           :- Toggle Magisk daemon mode ON / OFF
+*  --           :-   Default  :- ON
+*
+*  --       [ --autoshut ]
+*
+*  --           :- Toggle automatic power-off ON / OFF
+*  --           :-   Default  :- ON
+*
+*  --       [ --default ]
+*
+*  --           :- Reset all thresholds to defaults
+*
+*  --       [ --info ]
+*
+*  --           :- Show some useful information
+*
+*  --       [ --statreset ]
+*
+*  --           :- Reset battery statistics
+*
+*  --       [ --reconf ]
+*
+*  --           :- Re-configure sysfs references
+*
+*  --       [ --help ]
+*
+*  --           :- Show this help message
 
 ### Notes
 
-*    --  It requires your device to be charging while installing / [ --reconf ] for to detect where to hook into kernel
-
-*    --  Service will be triggered some later booting the device, so, you get a chance to toggle automatic power-off OFF
-
-*    --  Running just 'mcc' will reset up_threshold and down_threshold to defaults
-
-### Request
-
-*    --  I'm an Indian, so please forgive me some bad English,
-*    ----  also I'm not an artist, so please forgive me some bad UI ( shell ),
-*    ----  addressing both the above, I welcome you to suggest me what the UI should be alike
-*    ----  and what the strings really should be
+*  --  Device must be charging while installing / [ --reconf ]
+*
+*  --  I'm an Indian, so please forgive me some bad English,
+*  --------  Also I'm not an artist, so please forgive me some bad UI ( shell ),
+*  --------  Addressing both the above, I welcome you to suggest me what the UI should be alike
+*  --------  And what the strings really should be
 
 ### Changelog
 
-##### Eclair
+##### Froyo
 
-*  -- A new format for the UI
-
-##### Donut-3
-
-*  -- Reverted 'Please connect the charger' while installing
-*  ----  just for if your kernel is not fully functional
-
-*  -- To HTC 10 owners,
-*  ----  your device provides only half of the functionality needed by mcc to work,
-*  ----  so, it might or might not work,
-*  ----  thanks to @JohnFawkes for his co-operation with debugging
-
-##### Donut-2
-
-*  -- I'm sorry guys,
-*  ----  previous echo error fix was not working for some devices,
-*  ----  and also previous version caused power-offs for clean flashes,
-*  ----  this version will fix both these
+*  --  [ DISABLE % ] [ ENABLE % ] is now
+*  --------  [ --reset ] [ DISABLE % ] [ ENABLE % ]
+*
+*  --  Removed [ --keep ] [ KEEP % ]
+*  --------  To get that back, force some close thresholds like 90 89, 50 48 or likings
+*
+*  --  Removed [ --verbose ], [ --debug ]
+*  --------  If you find somthing bad, please PM me at XDA Developers and I would like to help you
+*
+*  --  Minor code improvements

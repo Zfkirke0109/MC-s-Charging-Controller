@@ -1,7 +1,7 @@
 #!/system/bin/sh
-# MC's Charging Controller (mcc)
+# MC's Charging Controller
 # mcc Main Script
-# versionCode = 201801081
+# versionCode = 201801111
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -9,9 +9,9 @@ if (! id | grep -q uid=0); then
   su -c mcc $@; exit $?;
 fi
 
-# Initial verbose logger
+# Environment logger
 if [ ! "$no_logging" ]; then
-  set -x 2>/cache/mcc_init.log
+  set -x 2>/cache/mcc_env.log
 fi
 echo ' '
 
@@ -63,15 +63,7 @@ ver_log=$data_dir/verbose.log
 
 ## yields an error and exits 1
 
-error() { echo -e "- Abort :- $1\n"; exit 1; }
-
-## logs a file content to the logfile
-
-log_file() {
-  echo -e "Filename :- $1\n\n" >>"$out_log"
-  cat $1 >>"$out_log"
-  echo -e "\n\n\n\n\n\n\n\n\n\n\n" >>"$out_log"
-}
+abort() { echo -e "- Abort :- $1\n"; exit 1; }
 
 ## gets a property from a prop file
 
@@ -100,10 +92,10 @@ set_prop() {
 test_level() {
   if (echo $1 | grep -Eq ^[0-9]+$); then
     if [[ $1 -lt 0 || $1 -gt 100 ]]; then
-      error 'Please give a level between 0 - 100'
+      abort 'Please give a level between 0 - 100'
     fi
   else
-    error 'Please use only numbers'
+    abort 'Please give only numbers'
   fi
 }
 
@@ -111,12 +103,11 @@ test_level() {
 
 test_diff() {
   if [[ ! $1 -ge $(($2 + 5)) ]]; then
-    error 'Please use [ --keep ] [ KEEP % ] for this'
+    abort "Please don't give this close thresholds"
   fi
 }
 
-## tests, and if found false,
-## toggles the prop true
+## tests and if false, toggles the prop true
 
 test_toggle() {
   if (! $($1)); then
@@ -145,28 +136,30 @@ switch_() {
     c_ON=$(get_prop switch_$i | awk '{print $2}')
     c_OFF=$(get_prop switch_$i | awk '{print $3}')
     switch=$(get_prop switch_$i | awk '{print $1}')
-    if [[ $switch != not_found_yet ]]; then
-      if [[ $1 = ON ]]; then
-        echo $c_ON >$switch
-      else
-        echo $c_OFF >$switch
-      fi
-    else
-      break
-    fi
+    case $switch in
+      not_found_yet)
+        break
+      ;;
+      *            )
+        case $1 in
+          ON) echo $c_ON  >$switch ;;
+          * ) echo $c_OFF >$switch ;;
+        esac
+      ;;
+    esac
   done
 }
 
-## overrides daemon mode, if running
+## overrides daemon mode if running
 
 override_daemon() {
   if ($(daemon_mode)); then
     set_prop daemon_mode false
-    echo -e "- Attention :- Daemon mode overridden\n"
+    overridden=true
   fi
 }
 
-## tests, and updates up, down_threshold
+## tests and updates up, down_threshold
 
 test_update_udt() {
   if [[ ! -z $2 ]]; then
@@ -185,7 +178,7 @@ test_update_udt() {
     fi
   fi
   if [[ $gerror && ! $force ]]; then
-    error 'Please give a level between 15 - 85'
+    abort 'Please give a level between 15 - 85'
   fi
   u=$1; if [[ ! $d ]]; then d=$2; fi
   set_prop up_threshold $u
@@ -197,11 +190,9 @@ test_update_udt() {
 
 is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $(uevent_f); }
 
-# My realtime configurations set-up
+# Always get props in realtime
 
 uevent_f() { get_prop uevent; }
-
-ver_logs() { get_prop ver_logs; }
 
 auto_shut() { get_prop auto_shut; }
 
@@ -215,8 +206,8 @@ down_threshold() { get_prop down_threshold; }
 
 shut_threshold() { get_prop shut_threshold; }
 
-# This tests and sets references if compatible
-# ( device must be charging throughout )
+# This tests compatibility and sets references
+## ( device must be charging throughout )
 
 set_ctrl_refs() {
   uevent_cache=$data_dir/uevent_cache.tmp
@@ -229,74 +220,72 @@ set_ctrl_refs() {
   sleep 5
 
   ## get all possible references
-  echo -e "- Re-configuring kernel references...\n"
+  echo -e "- Re-configuring sysfs references...\n"
   if [[ ! -f $uevent_cache ]]; then
-    find /sys/devices -type f -name uevent | sort >$uevent_cache
+    find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$uevent_cache
   fi
 
   echo_write() { echo $1 >$2 2>/dev/null; }
 
   while read uevent; do
 
-    ## cycling through all,
-    ## get a matching uevent file
+    ## cycling through all, get a matching uevent file
     if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
       set_prop uevent $uevent
 
-      ## ask and wait for charger,
-      ## unless charging
-      ##      ( mcc in installed, thus is safe )
+      ## ask and wait for charger
+      ## ( mcc in installed, thus is safe )
       while (! is_charging); do
         echo -e "- Caution :- Device seem not charging\n"; sleep 5;
-      done; sleep 1
+      done; sleep 0.2
 
-      ## cycling through all,
-      ## get a boolean switch
+      ## cycling through all, get a boolean switch
       i=1
       for ref in ${uevent%/*}/*; do
       if [[ -f $ref ]]; then
       chown 0:0 $ref; chmod 644 $ref;
       else continue; fi
         case $(cat $ref) in
-          1)
+          1       )
             echo_write 0 $ref
             c_ON=1; c_OFF=0;              ;;
-          0)
+          0       )
             echo_write 1 $ref
             c_ON=0; c_OFF=1;              ;;
-          on)
+          on      )
             echo_write off $ref
             c_ON=on; c_OFF=off;           ;;
-          off)
+          off     )
             echo_write on $ref
             c_ON=off; c_OFF=on;           ;;
-          true)
+          true    )
             echo_write false $ref
             c_ON=true; c_OFF=false;       ;;
-          false)
+          false   )
             echo_write true $ref
             c_ON=false; c_OFF=true;       ;;
-          enable)
+          enable  )
             echo_write disable $ref
             c_ON=enable; c_OFF=disable;   ;;
-          disable)
+          disable )
             echo_write enable $ref
             c_ON=disable; c_OFF=enable;   ;;
-          enabled)
+          enabled )
             echo_write disabled $ref
             c_ON=enabled; c_OFF=disabled; ;;
           disabled)
             echo_write enabled $ref
             c_ON=disabled; c_OFF=enabled; ;;
-          *)
+          *       )
             continue                      ;;
         esac; sleep 0.2
 
         ## test if that works correctly,
-        ## if yes add it, else continue
         if (! is_charging); then
           echo_write $c_ON $ref; sleep 0.2;
           if (is_charging); then
+
+            ## if yes, add it
             set_prop switch_$i "$ref $c_ON $c_OFF"
             ((i += 1)); if [[ $i -eq 5 ]]; then
               break 2
@@ -320,23 +309,28 @@ set_ctrl_refs() {
       set_prop auto_shut false
       echo -e "- Attention :- Automatic power-off toggled OFF\n"
     fi
-    error "Your kernel don't support these functionalities"
+    abort "Your device don't support these functionalities"
   fi
 }
 
 # Function for [ --enable / --disable ] [ % / time ]
 
 charge() {
-  if [[ $1 = enable ]]; then
-    turn_1=ON; turn_2=OFF; op=-lt; text=enabled; test='! is_charging';
-  else
-    turn_1=OFF; turn_2=ON; op=-gt; text=disabled; test='is_charging';
-  fi
+  case $1 in
+    enable)
+      turn_1=ON; turn_2=OFF; op=-lt;
+      text=enabled; test='! is_charging';
+    ;;
+    *     )
+      turn_1=OFF; turn_2=ON; op=-gt;
+      text=disabled; test='is_charging';
+    ;;
+  esac
   if [[ ! -z $2 ]]; then
     if (echo $2 | grep -Eq ^[0-9]+%$); then
-      threshold=$(echo $2 | tr -d %)
-      if [[ $threshold -lt 0 || $threshold -gt 100 ]]; then
-        error 'Please give a level between 0 - 100'
+      level=$(echo $2 | tr -d %)
+      if [[ $level -lt 0 || $level -gt 100 ]]; then
+        abort 'Please give a level between 0 - 100'
       fi
       override_daemon
       if (eval $test); then
@@ -347,7 +341,7 @@ charge() {
         if (eval $test); then
           switch_ $turn_1
         fi
-        sleep 30
+        sleep 10
       done
       switch_ $turn_2
     elif (echo $2 | grep -Eq ^[0-9]+[smh]?$); then
@@ -359,7 +353,7 @@ charge() {
       sleep $2
       switch_ $turn_2
     else
-      error 'Please give a valid argument'
+      abort 'Please give a valid argument'
     fi
   else
     override_daemon
@@ -368,30 +362,27 @@ charge() {
     fi
     echo -e "- Charging $text\n"
   fi
+  if [[ $overridden ]]; then
+    set_prop daemon_mode true
+  fi
 }
 
-# Disable logger
+# Disable env logger
 set +x
 
 # Verbose logger
-if ($(ver_logs)); then
-  if [[ $1 != --verbose ]]; then
-    if [[ ! $no_logging ]]; then
-      if [[ -f $ver_log ]]; then
-        mv -f $ver_log $data_dir/verbose_last.log
-      fi
-      echo -e "- Attention :- Verbose logs are enabled\n"
-      getprop | grep product | tr -d [ | tr -d ] >$ver_log
-      echo -e "\nmcc_versionCode = 201801081\n" >>$ver_log
-      set -x 2>>$ver_log
-    fi
+if [[ ! $no_logging ]]; then
+  if [[ -f $ver_log ]]; then
+    mv -f $ver_log $data_dir/verbose_last.log
   fi
+  getprop | grep product | tr -d [ | tr -d ] >$ver_log
+  echo -e "\n\nversionCode = 201801111\n\n" >>$ver_log
+  set -x 2>>$ver_log
 fi
 
 # Set kernel references unless done
 if [[ $(uevent_f) = not_found_yet ]]; then
   case $1 in
-    --verbose        )               ;;
     --help           )               ;;
     --reconf         )               ;;
     --debug          )               ;;
@@ -439,43 +430,24 @@ case $1 in
 ## manpage
   --help)
     while read line; do
-      if [[ $line != '### Changelog' ]]; then
-        echo "$line"
-      else
-        break
-      fi
+      case $line in
+        '### Changelog') break      ;;
+        *              ) echo $line ;;
+      esac
     done <$data_dir/README.md
   ;;
 
-## re-test and configure kernel references
+## re-test and configure sysfs references
   --reconf) set_ctrl_refs
-  ;;
-
-## debugging on demand, output in /cache
-  --debug)
-    out_log=/cache/mcc_debug-"$(getprop ro.product.brand)-$(getprop ro.product.device)".log
-    rm -f "$out_log"
-    echo -e "- Gathering debugging data...\n"
-    log_file /cache/mcc_init.log
-    find $mod_dir -type f | while read entry; do
-      log_file $entry
-    done
-    echo -e "- Done\n"
-    echo -e "- Request :- Please PM me $out_log at XDA Developers\n"
   ;;
 
 ## reset battery stats
   --statreset)
     echo -e "- Resetting battery statistics...\n"
-    dumpsys batterysats --reset >/dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
+    if (! dumpsys batterysats --reset >/dev/null 2>&1); then
       rm -f /data/system/batterystats.bin
     fi
     echo -e "- Done\n"
-  ;;
-
-## toggle verbose logs
-  --verbose) toggle ver_logs 'verbose logs'
   ;;
 
 ## toggle auto shut
@@ -486,41 +458,21 @@ case $1 in
   --daemon) toggle daemon_mode 'daemon mode'
   ;;
 
-## keep battery level at certain level
-  --keep)
-    test_level $2
-    override_daemon
-    if (! is_charging); then
-      switch_ ON
-    fi
-    echo -e "- Battery level will be kept at $2%\n"
-    while(:); do
-      if [[ $(batt_level) -lt $2 ]]; then
-        if (! is_charging); then
-          switch_ ON
-        fi
-      elif [[ $(batt_level) -gt $2 ]]; then
-        if (is_charging); then
-          switch_ OFF
-        fi
-      fi
-      sleep 30
-    done
-  ;;
-
-## enable charging ( on demand / or for
-## certain % / time )
+## enable charging
+## ( on demand / or for certain % / time )
   --enable) charge enable $2
   ;;
 
-## disable charging ( on demand / or for
-## certain % / time )
+## disable charging
+## same as above
   --disable) charge disable $2
   ;;
 
 ## trigger service ( Magisk )
   --service_trigger)
     while(:); do
+
+      ## automatic power-off
       if ($(auto_shut)); then
         if [[ $(batt_level) -le $(shut_threshold) ]]; then
           if (! is_charging); then
@@ -528,6 +480,8 @@ case $1 in
           fi
         fi
       fi
+
+      ## daemon mode
       if ($(daemon_mode)); then
         if [[ $(batt_level) -ge $(up_threshold) ]]; then
           if (is_charging); then
@@ -539,7 +493,7 @@ case $1 in
           fi
         fi
       fi
-      sleep 30
+      sleep 10
     done
   ;;
 
@@ -549,44 +503,49 @@ case $1 in
     set_prop up_threshold 70
     set_prop down_threshold 60
     echo -e "- Reverted all the thresholds to defaults\n"
- ;;
+  ;;
 
 ## update auto shut threshold
   --shut)
-    if (echo $2 | grep -Eq ^[0-9]+$); then
-      if [[ $2 -gt 20 || $2 -lt 5 ]]; then
-        if [[ ! $force ]]; then
-          error 'Please give a level between 5 - 20'
+    if [[ ! -z $2 ]]; then
+      if (echo $2 | grep -Eq ^[0-9]+$); then
+        if [[ $2 -gt 20 || $2 -lt 5 ]]; then
+          if [[ ! $force ]]; then
+            abort 'Please give a level between 5 - 20'
+          fi
         fi
+      else
+        abort 'Please give only numbers'
       fi
     else
-      error 'Please use only numbers'
+      abort 'Please give a threshold'
     fi
     set_prop shut_threshold $2
     echo -e "- New value saved\n"
     test_toggle auto_shut 'Automatic power-off'
   ;;
 
-## update previous thresholds
-  *)
-    if [[ $1 = -* ]]; then
-      error "Invalid argument"
-    fi
-    if [[ ! -z $2 ]]; then
-      test_level $2; test_level $1;
-      if [[ $2 -gt $1 ]]; then
-        test_diff $2 $1; test_update_udt $2 $1;
+## update daemon mode thresholds
+  --reset)
+    if [[ ! -z $3 ]]; then
+      test_level $3; test_level $2;
+      if [[ $3 -gt $2 ]]; then
+        test_diff $3 $2; test_update_udt $3 $2;
       else
-        test_diff $1 $2; test_update_udt $1 $2;
+        test_diff $2 $3; test_update_udt $2 $3;
       fi
-    elif [[ ! -z $1 ]]; then
-      test_level $1; test_update_udt $1;
+    elif [[ ! -z $2 ]]; then
+      test_level $2; test_update_udt $2;
     else
-      set_prop up_threshold 70
-      set_prop down_threshold 60
-      echo -e "- Reverted up, down_threshold to defaults\n"
+      abort 'Please give some thresholds'
     fi
     test_toggle daemon_mode 'Daemon mode'
+  ;;
+
+## no arguments, yield for manpage
+  *)
+    echo -e "Heyyo fella,\n"
+    echo -e "Please run \"mcc --help\" for help\n"
   ;;
 esac
 exit 0

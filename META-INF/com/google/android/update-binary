@@ -1,31 +1,19 @@
 #!/sbin/sh
-# MC's Charging Controller (mcc)
+# MC's Charging Controller
 # mcc update-binary
-# versionCode = 201801081
+# versionCode = 201801111
 # MCMotherEffin' @ XDA Developers
 
-# Detect whether in boot mode
-if (! ps | grep -v grep | grep -q zygote); then
-  is_boot_mode=false
-  if (ps -A 2>/dev/null | grep -v grep | grep -q zygote); then
-    is_boot_mode=true
-  fi
-else
-  is_boot_mode=true
-fi
-
 # Abort if recovery installation
-#     ( mcc controls charging while booted up )
-if (! $is_boot_mode); then
+## ( boot.img and recovery.img are different )
+if (id | grep -q context=.*recovery.*); then
   fd=$2
 
   ui_print() { echo -e "ui_print $1\nui_print" >>/proc/self/fd/$fd; }
 
-  ui_print ' '
-  ui_print ' '
+  ui_print ' '; ui_print ' ';
   ui_print '- Abort :- Please install in boot mode'
-  ui_print ' '
-  ui_print ' '
+  ui_print ' '; ui_print ' ';
   exit 1
 fi
 echo ' '
@@ -39,13 +27,13 @@ image=      # image will be found and set later
 
 # Define universal functions
 
-error() { echo -e "- Abort :- $1\n"; exit 1; }
+abort() { echo -e "- Abort :- $1\n"; exit 1; }
 
 # Set busybox up
 magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
 if [ ! -x "$magisk_bb" ]; then
-  echo -e "- Abort :- Could not find Magisk internal busybox\n"
-  error 'Please install Magisk v14.0+'
+  echo -e "- Error :- Could not find Magisk internal busybox\n"
+  abort 'Please install Magisk v14.0+'
 fi
 for func in $($magisk_bb --list); do
   alias $func="$magisk_bb $func"
@@ -79,23 +67,22 @@ done
 if [[ ! -z $mount_point ]]; then
   main_mod_path=$mount_point/mcc
 else
-  error 'Could not find Magisk mount point'
+  abort 'Could not find Magisk mount point'
 fi
 
 # Print module name
 echo -e "------------------------------------------------\n"
-echo -e "     MC's Charging Controller (mcc)\n"
+echo -e "     MC's Charging Controller\n"
 echo -e "         by MCMotherEffin' @ XDA Developers\n"
 echo -e "------------------------------------------------\n"
 
 # Test compatibility and set references
-#    ( device must be charging throughout )
-#    ( see the Main Script for documentation )
+## ( see the Main Script for documentation )
 echo -e "- Please make sure the device is charging\n"
 sleep 5
 echo -e "- Checking compatibility...\n"
 mkdir ${tmp_file%/*}
-find /sys/devices -type f -name uevent | sort >$tmp_file
+find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$tmp_file
 
 is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
 
@@ -107,37 +94,37 @@ while read uevent; do
       chown 0:0 $ref; chmod 644 $ref;
       else continue; fi
       case $(cat $ref) in
-        1)
+        1       )
           echo 0 >$ref
           c_ON=1; c_OFF=0;              ;;
-        0)
+        0       )
           echo 1 >$ref
           c_ON=0; c_OFF=1;              ;;
-        on)
+        on      )
           echo off >$ref
           c_ON=on; c_OFF=off;           ;;
-        off)
+        off     )
           echo on >$ref
           c_ON=off; c_OFF=on;           ;;
-        true)
+        true    )
           echo false >$ref
           c_ON=true; c_OFF=false;       ;;
-        false)
+        false   )
           echo true >$ref
           c_ON=false; c_OFF=true;       ;;
-        enable)
+        enable  )
           echo disable >$ref
           c_ON=enable; c_OFF=disable;   ;;
-        disable)
+        disable )
           echo enable >$ref
           c_ON=disable; c_OFF=enable;   ;;
-        enabled)
+        enabled )
           echo disabled >$ref
           c_ON=enabled; c_OFF=disabled; ;;
         disabled)
           echo enabled >$ref
           c_ON=disabled; c_OFF=enabled; ;;
-        *)
+        *       )
           continue                      ;;
       esac; sleep 0.2
       if (! is_charging); then
@@ -158,16 +145,17 @@ rm -rf ${tmp_file%/*}
 if [[ $i -gt 0 ]]; then
   echo -e "- OK\n"
 else
-  error "Your kernel don't support these functionalities"
+  abort "Your device don't support these functionalities"
 fi
 
 # Get the image ready for installation
 if [[ -f $image ]]; then
-  echo -e "- $image detected\n"
+  echo -e "- Found $image\n"
 
   imgsize_test() {
     e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
   }
+
   img_used=$(imgsize_test 1)
   img_total=$(imgsize_test 2)
   img_free=$((img_total - img_used))
@@ -200,10 +188,10 @@ for loop in 0 1 2 3 4 5 6 7; do
   if (is_mounted); then break; fi
 done
 if (! is_mounted); then
-  error "Could not mount $image"
+  abort "Could not mount $image"
 fi
 
-# Detect whether installed or not
+# Detect whether installed or what
 
 get_prop() { sed -n s/^$1=//p $2; }
 
@@ -216,10 +204,10 @@ else
 fi
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801081 ]]; then
+if [[ $cur_ver_code -ge 201801111 ]]; then
 
   # Uninstall
-  echo -e "- Same or newer detected\n"
+  echo -e "- Same or newer already installed\n"
   echo -e "- Attention :- Uninstalling...\n"
   rm -rf $mod_path $main_mod_path 2>/dev/null
 else
@@ -229,12 +217,11 @@ else
   # Preserve old settings
   old_conf=$main_mod_path/data/settings.conf
   if [[ -f $old_conf ]]; then
-    set_1=$(get_prop ver_logs $old_conf)
-    set_2=$(get_prop auto_shut $old_conf)
-    set_3=$(get_prop daemon_mode $old_conf)
-    set_4=$(get_prop up_threshold $old_conf)
-    set_5=$(get_prop down_threshold $old_conf)
-    set_6=$(get_prop shut_threshold $old_conf)
+    set_1=$(get_prop auto_shut $old_conf)
+    set_2=$(get_prop daemon_mode $old_conf)
+    set_3=$(get_prop up_threshold $old_conf)
+    set_4=$(get_prop down_threshold $old_conf)
+    set_5=$(get_prop shut_threshold $old_conf)
   fi
 
   # Create a clean path
@@ -250,22 +237,20 @@ else
   # Set preserved settings
   if [[ ! -z $set_1 ]]; then
     echo -e "- Restoring settings...\n"
-    set_prop ver_logs $set_1
-    set_prop auto_shut $set_2
-    set_prop daemon_mode $set_3
-    set_prop up_threshold $set_4
-    set_prop down_threshold $set_5
-    set_prop shut_threshold $set_6
+    set_prop auto_shut $set_1
+    set_prop daemon_mode $set_2
+    set_prop up_threshold $set_3
+    set_prop down_threshold $set_4
+    set_prop shut_threshold $set_5
   fi
 
   # Set new tested settings for this
   set_prop uevent $uevent
   for i in 0 1 2 3; do
-    if [[ ${switches[i]} ]]; then
-      set_prop switch_$((i + 1)) "${switches[i]}"
-    else
-      break
-    fi
+    case ${switches[i]} in
+      '') break                                       ;;
+       *) set_prop switch_$((i + 1)) "${switches[i]}" ;;
+     esac
   done
 
   # Auto mount
@@ -281,9 +266,11 @@ else
 
   # Service mode script
   unzip -o "$zip_file" service.sh -d $mod_path >&2
+
+  # Set permissions
   echo -e "- Setting permissions...\n"
 
-  set_perms_recursive() {
+  set_perm_recursive() {
     find $1 | while read entry; do
       chown $2:$3 $entry
       if [[ ! -d $entry ]]; then
@@ -294,8 +281,9 @@ else
       chcon u:object_r:system_file:s0 $entry
     done
   }
-  set_perms_recursive $mod_path 0 0 0644 0755
-  set_perms_recursive $mod_path/system/xbin 0 2000 0755 0755
+
+  set_perm_recursive $mod_path 0 0 0644 0755
+  set_perm_recursive $mod_path/system/xbin 0 2000 0755 0755
 fi
 
 # Unmount the image, and yippeee...

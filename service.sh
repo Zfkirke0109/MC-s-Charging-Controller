@@ -1,7 +1,7 @@
 #!/system/bin/sh
-# MC's Charging Controller (mcc)
+# MC's Charging Controller
 # mcc Service
-# versionCode = 201801081
+# versionCode = 201801111
 # MCMotherEffin' @ XDA Developers
 
 # Verbose logger
@@ -16,10 +16,15 @@ getprop | grep product | tr -d [ | tr -d ] >$data_dir/device_info.inf
 # Set all the switches writable
 for i in 1 2 3 4; do
   switch=$(sed -n s/^switch_$i=//p $data_dir/settings.conf | awk '{print $1}')
-  if [ $switch != not_found_yet ]; then
-    chown 0:0 $switch
-    chmod 644 $switch
-  else break; fi
+  case $switch in
+    not_found_yet)
+      break
+    ;;
+    *            )
+      chown 0:0 $switch
+      chmod 644 $switch
+    ;;
+  esac
 done
 
 # Trigger the service minding [ --autoshut ]
