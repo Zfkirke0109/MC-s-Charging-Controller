@@ -1,7 +1,7 @@
 #!/sbin/sh
 # MC's Charging Controller
 # mcc update-binary
-# versionCode = 201801111
+# versionCode = 201801112
 # MCMotherEffin' @ XDA Developers
 
 # Abort if recovery installation
@@ -204,7 +204,7 @@ else
 fi
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801111 ]]; then
+if [[ $cur_ver_code -ge 201801112 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"

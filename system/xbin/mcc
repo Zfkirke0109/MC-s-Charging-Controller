@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # MC's Charging Controller
 # mcc Main Script
-# versionCode = 201801111
+# versionCode = 201801112
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -376,7 +376,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $data_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801111\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801112\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
@@ -431,8 +431,8 @@ case $1 in
   --help)
     while read line; do
       case $line in
-        '### Changelog') break      ;;
-        *              ) echo $line ;;
+        '### Changelog') break        ;;
+        *              ) echo "$line" ;;
       esac
     done <$data_dir/README.md
   ;;
@@ -544,8 +544,8 @@ case $1 in
 
 ## no arguments, yield for manpage
   *)
-    echo -e "Heyyo fella,\n"
-    echo -e "Please run \"mcc --help\" for help\n"
+    echo -e "- Heyyo fella,\n"
+    echo -e "-- Please run \"mcc --help\" for help\n"
   ;;
 esac
 exit 0

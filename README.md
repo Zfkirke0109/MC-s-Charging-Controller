@@ -1,6 +1,6 @@
 ###### MC's Charging Controller
 ###### mcc README
-###### versionCode = 201801111
+###### versionCode = 201801112
 ###### MCMotherEffin' @ XDA Developers
 
 ### Into
@@ -87,6 +87,10 @@
 *  --------  And what the strings really should be
 
 ### Changelog
+
+##### Froyo-1
+
+*  --  Fixed the error with [ --help ]
 
 ##### Froyo
 
