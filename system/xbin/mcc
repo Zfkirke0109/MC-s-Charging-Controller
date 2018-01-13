@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801131 )
+# mcc Main Script ( 201801132 )
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -164,7 +164,7 @@ test_update_udt() {
         d=$(($1 - 5))
         if [[ $d -le 0 ]]; then
           d=1
-          if [[ $1 -le 1 ]]; then u=2; fi
+          if [[ $1 -eq 1 ]]; then u=2; fi
         fi
       fi
     fi
@@ -355,7 +355,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $data_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801131\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801132\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
@@ -489,6 +489,9 @@ case $1 in
         if [[ $2 -gt 20 || $2 -lt 5 ]]; then
           if [[ ! $force ]]; then
             abort 'Please give a level between 5 - 20'
+          fi
+          if [[ $2 -le 0 || $2 -ge 100 ]]; then
+            abort 'Please give a level between 0 - 100'
           fi
         fi
       else

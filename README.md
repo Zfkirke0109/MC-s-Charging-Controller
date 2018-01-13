@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801131 )
+###### mcc README ( 201801132 )
 ###### MCMotherEffin' @ XDA Developers
 
 ### Intro
@@ -22,61 +22,61 @@
 
 ##### Arguments can be
 
-*  --       [ --reset ] [ DISABLE % ] [ ENABLE % ]
+*           [ --reset ] [ DISABLE % ] [ ENABLE % ]
 
                 :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
                 :-       [ ENABLE % ] is optional
                 :-       Defaults :- 70 60
 
-*  --       [ --shut ] [ SHUT % ]
+*           [ --shut ] [ SHUT % ]
 
                 :- Set threshold ( % ) for automatically powering the device OFF
                 :-       Default  :- 20
 
-*  --       [ --force ] [ ARGS ACCORDINGLY ].....
+*           [ --force ] [ ARGS ACCORDINGLY ].....
 
                 :- Same as [ --reset ] [ DISABLE % ] [ ENABLE % ]
                 :-       or [ --shut ] [ SHUT % ],
                 :-       Except for no limitations are applied
 
-*  --       [ --enable ] [ % / time ]
+*           [ --enable ] [ % / time ]
 
                 :- Enable charging for given time / until certain % 
                 :-       [ % / time ] is optional
                 :-       Time can be 30 ( 30 seconds ), 8m ( 8 minutes ) or 2h ( 2 hours )
                 :-       Level can be 60%, 55% or 19%
 
-*  --       [ --disable ] [ % / time ]
+*           [ --disable ] [ % / time ]
 
                 :- Same as above, except for charging is disabled
 
-*  --       [ --daemon ]
+*           [ --daemon ]
 
                 :- Toggle Magisk daemon mode ON / OFF
                 :-       Default  :- ON
 
-*  --       [ --autoshut ]
+*           [ --autoshut ]
 
                 :- Toggle automatic power-off ON / OFF
                 :-       Default  :- ON
 
-*  --       [ --default ]
+*           [ --default ]
 
                 :- Reset all thresholds to defaults
 
-*  --       [ --info ]
+*           [ --info ]
 
                 :- Show some useful information
 
-*  --       [ --statreset ]
+*           [ --statreset ]
 
                 :- Reset battery statistics
 
-*  --       [ --reconf ]
+*           [ --reconf ]
 
                 :- Re-configure sysfs references
 
-*  --       [ --help ]
+*           [ --help ]
 
                 :- Show this help message
 
@@ -91,6 +91,10 @@
 
 ### Changelog
 
+##### Gingerbread-1
+
+*  --  Added battery level check in [ --shut ]
+
 ##### Gingerbread
 
 *  --  Fixed the error with en/dis abling charging for some %
@@ -102,13 +106,3 @@
 ##### Froyo-1
 
 *  --  Fixed the error with [ --help ]
-
-##### Froyo
-
-*  --  [ DISABLE % ] [ ENABLE % ] is now [ --reset ] [ DISABLE % ] [ ENABLE % ]
-
-*  --  Removed [ --keep ] [ KEEP % ], yet [ --force ] works
-
-*  --  Removed [ --verbose ], [ --debug ]
-
-*  --  Minor code improvements
