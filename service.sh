@@ -1,7 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Service
-# versionCode = 201801112
+# mcc Service ( 201801131 )
 # MCMotherEffin' @ XDA Developers
 
 # Verbose logger
@@ -9,9 +8,6 @@ set -x 2>${0%/*}/service.log
 
 # Define variables
 data_dir=${0%/*}/data
-
-# Update device info
-getprop | grep product | tr -d [ | tr -d ] >$data_dir/device_info.inf
 
 # Set all the switches writable
 for i in 1 2 3 4; do
@@ -28,5 +24,5 @@ for i in 1 2 3 4; do
 done
 
 # Trigger the service minding [ --autoshut ]
-export no_logging=true; sleep 90;
+sleep 90; export no_logging=true;
 (mcc --service_trigger) &
