@@ -1,31 +1,30 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary
-# versionCode = 201801112
+# mcc update-binary ( 201801131 )
 # MCMotherEffin' @ XDA Developers
 
 # Abort if recovery installation
 ## ( boot.img and recovery.img are different )
-if (id | grep -q context=.*recovery.*); then
-  fd=$2
+if (! which su >/dev/null); then
+  fd=/proc/self/fd/$2
 
-  ui_print() { echo -e "ui_print $1\nui_print" >>/proc/self/fd/$fd; }
+  ui_print() { echo -e "ui_print $1\nui_print" >>$fd; }
 
   ui_print ' '; ui_print ' ';
-  ui_print '- Abort :- Please install in boot mode'
+  ui_print '- Abort :- Please install from Magisk Manager'
   ui_print ' '; ui_print ' ';
   exit 1
 fi
 echo ' '
 
-# Define universal variables
+# Define variables
 zip_file="$3"
 tmp_file=/dev/mcc_tmp/file
 mount_path=/dev/mcc_img
 mod_path=$mount_path/mcc
-image=      # image will be found and set later
+image=      # will be set later
 
-# Define universal functions
+# Define functions
 
 abort() { echo -e "- Abort :- $1\n"; exit 1; }
 
@@ -42,33 +41,27 @@ done
 # image is set here
 image=${magisk_bb%/*/*}/magisk_merge.img
 
-# Detect whether A / B device
+# Get the system for A / B device
+system=/system
 if [[ -d /system_root ]]; then
   system=/system_root/system
-else
-  system=/system
 fi
 
 # Detect Magisk mount point
 for loop_device in /dev/block/loop*; do
-  if (losetup $loop_device | grep -q ${magisk_bb%/*/*}/magisk.img); then
+  if (losetup $loop_device | grep -q ${image%/*}/magisk.img); then
     for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
-      if [[ ! -z $mount_point ]]; then
-        if [[ -f $mount_point/.core/hidelist ]]; then
-          if [[ -d $mount_point/.core/service.d ]]; then
-            break 2
-          fi
-        fi
+      if [[ -f $mount_point/.core/hidelist ]]; then
+        break 2
       fi
       unset mount_point
     done
   fi
 done
-if [[ ! -z $mount_point ]]; then
-  main_mod_path=$mount_point/mcc
-else
+if [[ -z $mount_point ]]; then
   abort 'Could not find Magisk mount point'
 fi
+main_mod_path=$mount_point/mcc
 
 # Print module name
 echo -e "------------------------------------------------\n"
@@ -84,15 +77,14 @@ echo -e "- Checking compatibility...\n"
 mkdir ${tmp_file%/*}
 find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$tmp_file
 
-is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
+is_charging() { grep -q =[Cc]harging$ $uevent; }
 
 while read uevent; do
-  if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
+  if (grep -q ^POWER_SUPPLY_.*=.*[Bb]att.*$ $uevent); then
     i=0
     for ref in ${uevent%/*}/*; do
-      if [[ -f $ref ]]; then
+      if [[ ! -f $ref ]]; then continue; fi
       chown 0:0 $ref; chmod 644 $ref;
-      else continue; fi
       case $(cat $ref) in
         1       )
           echo 0 >$ref
@@ -131,9 +123,8 @@ while read uevent; do
         echo $c_ON >$ref; sleep 0.2;
         if (is_charging); then
           switches[i]="$ref $c_ON $c_OFF"
-          ((i += 1)); if [[ $i -eq 4 ]]; then
-          break 2
-          fi
+          ((i += 1))
+          if [[ $i -eq 4 ]]; then break 2; fi
         fi
       fi
       echo $c_ON >$ref
@@ -142,11 +133,10 @@ while read uevent; do
   fi
 done <$tmp_file
 rm -rf ${tmp_file%/*}
-if [[ $i -gt 0 ]]; then
-  echo -e "- OK\n"
-else
+if [[ $i -eq 0 ]]; then
   abort "Your device don't support these functionalities"
 fi
+echo -e "- OK\n"
 
 # Get the image ready for installation
 if [[ -f $image ]]; then
@@ -156,13 +146,11 @@ if [[ -f $image ]]; then
     e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
   }
 
-  img_used=$(imgsize_test 1)
+  img_used=$(($(imgsize_test 1) + 1))
   img_total=$(imgsize_test 2)
-  img_free=$((img_total - img_used))
-  if [[ ! $img_free -gt 0 ]]; then
-    imgsize_new=$(((img_used + 1) / 32 * 32 + 64))
+  if [[ $img_used -eq $img_total ]]; then
     echo -e "- Resizing $image...\n"
-    resize2fs $image ${imgsize_new}M
+    resize2fs $image $(((img_used + 1) / 32 * 32 + 64))M
   fi
 else
   echo -e "- Creating $image...\n"
@@ -177,10 +165,8 @@ echo -e "- Mounting $image...\n"
 mkdir $mount_path
 for loop in 0 1 2 3 4 5 6 7; do
   loop_device=/dev/block/loop$loop
-  if [[ ! -f $loop_device ]]; then
-    if [[ ! -b $loop_device ]]; then
-      mknod $loop_device b 7 $loop
-    fi
+  if [[ ! -b $loop_device ]]; then
+    mknod $loop_device b 7 $loop
   fi
   if (losetup $loop_device $image); then
     mount -t ext4 -o loop $loop_device $mount_path
@@ -191,89 +177,63 @@ if (! is_mounted); then
   abort "Could not mount $image"
 fi
 
-# Detect whether installed or what
+# Get current version code
 
 get_prop() { sed -n s/^$1=//p $2; }
 
-if [[ -f $mod_path/module.prop ]]; then
-  cur_ver_code=$(get_prop versionCode $mod_path/module.prop)
-elif [[ -f $main_mod_path/module.prop ]]; then
-  cur_ver_code=$(get_prop versionCode $main_mod_path/module.prop)
-else
-  cur_ver_code=0
-fi
+cur_ver_code=$(get_prop versionCode $mod_path/module.prop || get_prop versionCode $main_mod_path/module.prop || echo 0)
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801112 ]]; then
+if [[ $cur_ver_code -ge 201801131 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"
   echo -e "- Attention :- Uninstalling...\n"
-  rm -rf $mod_path $main_mod_path 2>/dev/null
+  rm -rf $mod_path $main_mod_path
 else
 
   # Install
 
-  # Preserve old settings
-  old_conf=$main_mod_path/data/settings.conf
-  if [[ -f $old_conf ]]; then
-    set_1=$(get_prop auto_shut $old_conf)
-    set_2=$(get_prop daemon_mode $old_conf)
-    set_3=$(get_prop up_threshold $old_conf)
-    set_4=$(get_prop down_threshold $old_conf)
-    set_5=$(get_prop shut_threshold $old_conf)
-  fi
-
   # Create a clean path
-  rm -rf $mod_path 2>/dev/null; mkdir $mod_path;
+  rm -rf $mod_path; mkdir $mod_path;
 
   # Extract module files
   echo -e "- Extracting module files...\n"
-  unzip -o "$zip_file" 'system/*' 'data/*' -d $mod_path >&2
+  unzip -o "$zip_file" 'system/*' 'data/*' service.sh module.prop -d $mod_path >&2
   unzip -o "$zip_file" README.md -d $mod_path/data >&2
 
   set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
 
-  # Set preserved settings
-  if [[ ! -z $set_1 ]]; then
+  # Restore settings
+  old_conf=$main_mod_path/data/settings.conf
+  if [[ -f $old_conf ]]; then
     echo -e "- Restoring settings...\n"
-    set_prop auto_shut $set_1
-    set_prop daemon_mode $set_2
-    set_prop up_threshold $set_3
-    set_prop down_threshold $set_4
-    set_prop shut_threshold $set_5
+    for prop in auto_shut daemon_mode up_threshold down_threshold shut_threshold; do
+      set_prop $prop $(get_prop $prop $old_conf)
+    done
   fi
 
-  # Set new tested settings for this
+  # Set new tested values for this
   set_prop uevent $uevent
   for i in 0 1 2 3; do
     case ${switches[i]} in
       '') break                                       ;;
-       *) set_prop switch_$((i + 1)) "${switches[i]}" ;;
+      * ) set_prop switch_$((i + 1)) "${switches[i]}" ;;
      esac
   done
 
   # Auto mount
   touch $mod_path/auto_mount
 
-  # Module info
-  unzip -o "$zip_file" module.prop -d $mod_path >&2
-
   # Update info for Magisk Manager
-  mkdir $main_mod_path 2>/dev/null
+  mkdir $main_mod_path
   touch $main_mod_path/update
   cp -f $mod_path/module.prop $main_mod_path
-
-  # Service mode script
-  unzip -o "$zip_file" service.sh -d $mod_path >&2
-
-  # Set permissions
-  echo -e "- Setting permissions...\n"
 
   set_perm_recursive() {
     find $1 | while read entry; do
       chown $2:$3 $entry
-      if [[ ! -d $entry ]]; then
+      if [[ -f $entry ]]; then
         chmod $4 $entry
       else
         chmod $5 $entry
@@ -282,6 +242,8 @@ else
     done
   }
 
+  # Set permissions
+  echo -e "- Setting permissions...\n"
   set_perm_recursive $mod_path 0 0 0644 0755
   set_perm_recursive $mod_path/system/xbin 0 2000 0755 0755
 fi
