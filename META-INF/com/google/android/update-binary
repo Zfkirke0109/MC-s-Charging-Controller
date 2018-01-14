@@ -1,11 +1,12 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201801132 )
+# mcc update-binary ( 201801141 )
 # MCMotherEffin' @ XDA Developers
 
-# Abort if recovery installation
-## ( boot.img and recovery.img are different )
 if (! which su >/dev/null); then
+
+  # Abort for recovery installation
+  ## boot.img and recovery.img are different
   fd=/proc/self/fd/$2
 
   ui_print() { echo -e "ui_print $1\nui_print" >>$fd; }
@@ -70,12 +71,12 @@ echo -e "         by MCMotherEffin' @ XDA Developers\n"
 echo -e "------------------------------------------------\n"
 
 # Test compatibility and set references
-## ( see the Main Script for documentation )
+## see the Main Script for documentation
 echo -e "- Please make sure the device is charging\n"
 sleep 5
 echo -e "- Checking compatibility...\n"
 mkdir ${tmp_file%/*}
-find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$tmp_file
+find /sys/devices -type f -name uevent | grep -E 'batt|charg' >$tmp_file
 
 is_charging() { grep -q =[Cc]harging$ $uevent; }
 
@@ -157,10 +158,9 @@ else
   make_ext4fs -l 64M $image >&2
 fi
 
-# Mount the image
-
 is_mounted() { grep -q " $mount_path " /proc/mounts; }
 
+# Mount the image
 echo -e "- Mounting $image...\n"
 mkdir $mount_path
 for loop in 0 1 2 3 4 5 6 7; do
@@ -177,14 +177,13 @@ if (! is_mounted); then
   abort "Could not mount $image"
 fi
 
-# Get current version code
-
 get_prop() { sed -n s/^$1=//p $2; }
 
+# Get current version code
 cur_ver_code=$(get_prop versionCode $mod_path/module.prop || get_prop versionCode $main_mod_path/module.prop || echo 0)
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801132 ]]; then
+if [[ $cur_ver_code -ge 201801141 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"
@@ -201,12 +200,22 @@ else
   echo -e "- Extracting module files...\n"
   unzip -o "$zip_file" 'system/*' 'data/*' service.sh module.prop -d $mod_path >&2
   unzip -o "$zip_file" README.md -d $mod_path/data >&2
+  bin_path=$mod_path/system/xbin
+  if [[ ! -d $system/xbin ]]; then
 
-  set_prop() { sed -i "s|$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
+    # Target do not exist in /system root
+    ## thus magic mounting can be dangerous
+    ## move to /system/bin for it is guaranteed to exist
+    mv $bin_path $mod_path/system/bin
+    bin_path=$mod_path/system/bin
+  fi
 
-  # Restore settings
+  set_prop() { sed -i "s|^$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
+
   old_conf=$main_mod_path/data/settings.conf
   if [[ -f $old_conf ]]; then
+
+    # Restore settings
     echo -e "- Restoring settings...\n"
     for prop in auto_shut daemon_mode up_threshold down_threshold shut_threshold; do
       set_prop $prop $(get_prop $prop $old_conf)
@@ -217,8 +226,12 @@ else
   set_prop uevent $uevent
   for i in 0 1 2 3; do
     case ${switches[i]} in
-      '') break                                       ;;
-      * ) set_prop switch_$((i + 1)) "${switches[i]}" ;;
+      '')
+        break
+      ;;
+      * )
+        set_prop switch_$((i + 1)) "${switches[i]}"
+      ;;
      esac
   done
 
@@ -245,7 +258,7 @@ else
   # Set permissions
   echo -e "- Setting permissions...\n"
   set_perm_recursive $mod_path 0 0 0644 0755
-  set_perm_recursive $mod_path/system/xbin 0 2000 0755 0755
+  set_perm_recursive $bin_path 0 2000 0755 0755
 fi
 
 # Unmount the image, and yippeee...

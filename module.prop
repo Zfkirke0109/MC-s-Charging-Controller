@@ -1,7 +1,7 @@
 id=mcc
 name=MC's Charging Controller
-version=Gingerbread-1
-versionCode=201801132
+version=Berry
+versionCode=201801141
 author=MCMotherEffin' @ XDA Developers
 description=A charging controller utility, for to extend battery life
 template=1400

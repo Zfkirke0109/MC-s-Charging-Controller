@@ -1,20 +1,20 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801132 )
+###### mcc README ( 201801141 )
 ###### MCMotherEffin' @ XDA Developers
 
 ### Intro
 
-##### It is meant for to extend Lithium batteries' life by controlling charging
+* ##### It is meant for to extend Lithium batteries' life by controlling charging
 
-##### It allows you to turn charging ON / OFF as per your mood, taking as time, level or on demand
+* ##### It allows you to turn charging ON / OFF as per your mood, taking as time, level or on demand
 
-##### Talking more is battery stats reset, and some other useful info
+* ##### Talking more is battery stats reset, and some other useful info
 
-##### Everything is interactive via shell CLI, run "mcc" from Terminal
+* ##### Everything is interactive via shell CLI, run "mcc" from Terminal
 
-##### Some basic tasks are automated
+* ##### Some basic tasks are automated
 
-##### It is inspired from @VR25's 'Magic Charging Switch'
+* ##### It is inspired from @VR25's 'Magic Charging Switch'
 
 ### Usage
 
@@ -91,6 +91,14 @@
 
 ### Changelog
 
+##### Berry
+
+*  --  Fixed possible bootloops for devices with no xbin
+
+*  --  Code improvements
+
+*  --  New version name style
+
 ##### Gingerbread-1
 
 *  --  Added battery level check in [ --shut ]
@@ -102,7 +110,3 @@
 *  --  Code put all in sync
 
 *  --  Updated README.md
-
-##### Froyo-1
-
-*  --  Fixed the error with [ --help ]

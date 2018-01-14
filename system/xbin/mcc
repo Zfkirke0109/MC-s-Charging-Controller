@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801132 )
+# mcc Main Script ( 201801141 )
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -46,13 +46,13 @@ if [[ -z $mount_point ]]; then
   exit 1
 fi
 
-# All universal variables are defined here
+# Define variables
 mod_dir=$mount_point/mcc
 data_dir=$mod_dir/data
 config=$data_dir/settings.conf
 ver_log=$data_dir/verbose.log
 
-# All universal functions are defined here
+# Define functions
 
 ## yields an error and exits 1
 
@@ -119,10 +119,10 @@ switch_() {
   for i in 1 2 3 4; do
     switch=$(get_prop switch_$i | awk '{print $1}')
     case $switch in
-      not_found_yet)
+      dummy_Path)
         break
       ;;
-      *            )
+      *         )
         case $1 in
           ON) get_prop switch_$i | awk '{print $2}' >$switch ;;
           * ) get_prop switch_$i | awk '{print $3}' >$switch ;;
@@ -200,14 +200,14 @@ down_threshold() { get_prop down_threshold; }
 shut_threshold() { get_prop shut_threshold; }
 
 # This tests compatibility and sets references
-## ( device must be charging throughout )
+## device must be charging throughout
 
 set_ctrl_refs() {
   uevent_cache=$data_dir/uevent_cache.tmp
 
   ## reset previous switches
   for i in 1 2 3 4; do
-    set_prop switch_$i 'not_found_yet dummy_ON dummy_OFF'
+    set_prop switch_$i 'dummy_Path dummy_ON dummy_OFF'
   done
   echo -e "- Attention :- Please make sure the device is charging\n"
   sleep 5
@@ -215,7 +215,7 @@ set_ctrl_refs() {
 
   ## get all possible references
   if [[ ! -f $uevent_cache ]]; then
-    find /sys/devices -type f -name uevent | grep -E 'batt|charg' | sort >$uevent_cache
+    find /sys/devices -type f -name uevent | grep -E 'batt|charg' >$uevent_cache
   fi
 
   echo_write() { echo $1 >$2 2>/dev/null; }
@@ -227,7 +227,7 @@ set_ctrl_refs() {
       set_prop uevent $uevent
 
       ## ask and wait for charger
-      ## ( mcc in installed, thus is safe )
+      ## mcc in installed, thus is safe
       while (! is_charging); do
         echo -e "- Caution :- Device seem not charging\n"; sleep 5;
       done; sleep 0.2
@@ -291,7 +291,7 @@ set_ctrl_refs() {
   if [[ $i -eq 1 ]]; then
 
     ## switch is not found, reset uevent and toggle auto_shut OFF
-    set_prop uevent not_found_yet
+    set_prop uevent dummy_Path
     if ($(auto_shut)); then
       set_prop auto_shut false
       echo -e "- Attention :- Automatic power-off toggled OFF\n"
@@ -355,12 +355,12 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $data_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801132\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801141\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
 # Set sysfs references unless done
-if [[ $(uevent_f) = not_found_yet ]]; then
+if [[ $(uevent_f) = dummy_Path ]]; then
   case $1 in
     --help            )               ;;
     --reconf          )               ;;
