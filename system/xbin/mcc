@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801141 )
+# mcc Main Script ( 201801151 )
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -90,7 +90,9 @@ test_level() {
 
 test_diff() {
   if [[ ! $1 -ge $(($2 + 5)) ]]; then
-    abort "Please don't give this close thresholds"
+    if [[ ! $force ]]; then
+      abort "Please don't give this close thresholds"
+    fi
   fi
 }
 
@@ -132,7 +134,7 @@ switch_() {
   done
 }
 
-## performs some pre-'charge() function' actions
+## performs some pre-'charge()' actions
 
 charge_acts() {
   if ($(daemon_mode)); then
@@ -160,7 +162,7 @@ test_update_udt() {
       d=$(($1 - 10))
     else
       d=15
-      if [[ $gerror ]]; then
+      if [[ $1 -lt 20 ]]; then
         d=$(($1 - 5))
         if [[ $d -le 0 ]]; then
           d=1
@@ -355,7 +357,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $data_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801141\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801151\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
@@ -388,7 +390,7 @@ if [[ $1 = --force ]]; then force=true; shift; fi
 # Handle given arguments
 case $1 in
 
-## info
+## some useful info
   --info)
     echo -e "- Battery status\n"
     echo "-- battery level :- $(batt_level)"
@@ -410,7 +412,7 @@ case $1 in
     echo -e "-- automatic power-off :- $status\n"
   ;;
 
-## manpage
+## help page ( README.md without Changelog )
   --help)
     while IFS= read line; do
       case $line in
@@ -442,7 +444,7 @@ case $1 in
   ;;
 
 ## enable charging
-## ( on demand / or for certain % / time )
+## ( on demand or for certain % / time )
   --enable) charge enable $2
   ;;
 
@@ -524,7 +526,7 @@ case $1 in
     test_toggle daemon_mode 'Daemon mode'
   ;;
 
-## no arguments, yield for manpage
+## with no arguments, ask user to go help
   *)
     echo -e "- Heyyo fella,\n"
     echo -e "-- Please run \"mcc --help\" for help\n"

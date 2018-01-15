@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801141 )
+###### mcc README ( 201801151 )
 ###### MCMotherEffin' @ XDA Developers
 
 ### Intro
@@ -12,7 +12,7 @@
 
 * ##### Everything is interactive via shell CLI, run "mcc" from Terminal
 
-* ##### Some basic tasks are automated
+* ##### Most basic tasks are automated
 
 * ##### It is inspired from @VR25's 'Magic Charging Switch'
 
@@ -91,6 +91,12 @@
 
 ### Changelog
 
+##### Candy
+
+*  --  Fixed [ --force ] for close thresholds
+
+*  --  Code improvements
+
 ##### Berry
 
 *  --  Fixed possible bootloops for devices with no xbin
@@ -102,11 +108,3 @@
 ##### Gingerbread-1
 
 *  --  Added battery level check in [ --shut ]
-
-##### Gingerbread
-
-*  --  Fixed the error with en/dis abling charging for some %
-
-*  --  Code put all in sync
-
-*  --  Updated README.md

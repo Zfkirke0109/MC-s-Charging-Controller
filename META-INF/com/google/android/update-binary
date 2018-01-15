@@ -1,18 +1,18 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201801141 )
+# mcc update-binary ( 201801151 )
 # MCMotherEffin' @ XDA Developers
 
 if (! which su >/dev/null); then
 
-  # Abort for recovery installation
-  ## boot.img and recovery.img are different
+  # Abort if recovery installation
+  ## we parse uevents for boot mode only
   fd=/proc/self/fd/$2
 
   ui_print() { echo -e "ui_print $1\nui_print" >>$fd; }
 
   ui_print ' '; ui_print ' ';
-  ui_print '- Abort :- Please install from Magisk Manager'
+  ui_print '- Abort :- Please install in boot mode'
   ui_print ' '; ui_print ' ';
   exit 1
 fi
@@ -23,7 +23,8 @@ zip_file="$3"
 tmp_file=/dev/mcc_tmp/file
 mount_path=/dev/mcc_img
 mod_path=$mount_path/mcc
-image=      # will be set later
+main_mod_path=      # will be set later
+image=              # same as above
 
 # Define functions
 
@@ -62,6 +63,8 @@ done
 if [[ -z $mount_point ]]; then
   abort 'Could not find Magisk mount point'
 fi
+
+# and main_mod_path here
 main_mod_path=$mount_point/mcc
 
 # Print module name
@@ -139,7 +142,7 @@ if [[ $i -eq 0 ]]; then
 fi
 echo -e "- OK\n"
 
-# Get the image ready for installation
+# Resize or create image for installation
 if [[ -f $image ]]; then
   echo -e "- Found $image\n"
 
@@ -183,7 +186,7 @@ get_prop() { sed -n s/^$1=//p $2; }
 cur_ver_code=$(get_prop versionCode $mod_path/module.prop || get_prop versionCode $main_mod_path/module.prop || echo 0)
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801141 ]]; then
+if [[ $cur_ver_code -ge 201801151 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"
@@ -202,10 +205,6 @@ else
   unzip -o "$zip_file" README.md -d $mod_path/data >&2
   bin_path=$mod_path/system/xbin
   if [[ ! -d $system/xbin ]]; then
-
-    # Target do not exist in /system root
-    ## thus magic mounting can be dangerous
-    ## move to /system/bin for it is guaranteed to exist
     mv $bin_path $mod_path/system/bin
     bin_path=$mod_path/system/bin
   fi
@@ -222,7 +221,7 @@ else
     done
   fi
 
-  # Set new tested values for this
+  # Set uevent and switches in settings.conf
   set_prop uevent $uevent
   for i in 0 1 2 3; do
     case ${switches[i]} in
@@ -235,7 +234,7 @@ else
      esac
   done
 
-  # Auto mount
+  # Enable auto mount
   touch $mod_path/auto_mount
 
   # Update info for Magisk Manager

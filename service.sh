@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Service ( 201801141 )
+# mcc Service ( 201801151 )
 # MCMotherEffin' @ XDA Developers
 
 # Verbose logger
@@ -24,5 +24,5 @@ for i in 1 2 3 4; do
 done
 
 # Trigger the service minding [ --autoshut ]
-sleep 90; export no_logging=true;
-(mcc --service_trigger) &
+sleep 90
+no_logging=true; (mcc --service_trigger) &
