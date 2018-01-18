@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801151 )
+###### mcc README ( 201801181 )
 ###### MCMotherEffin' @ XDA Developers
 
 ### Intro
@@ -91,6 +91,10 @@
 
 ### Changelog
 
+##### Dessert
+
+*  --  Fixed service being logged
+
 ##### Candy
 
 *  --  Fixed [ --force ] for close thresholds
@@ -104,7 +108,3 @@
 *  --  Code improvements
 
 *  --  New version name style
-
-##### Gingerbread-1
-
-*  --  Added battery level check in [ --shut ]

@@ -1,6 +1,6 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201801151 )
+# mcc update-binary ( 201801181 )
 # MCMotherEffin' @ XDA Developers
 
 if (! which su >/dev/null); then
@@ -40,7 +40,7 @@ for func in $($magisk_bb --list); do
   alias $func="$magisk_bb $func"
 done
 
-# image is set here
+# image is set here...
 image=${magisk_bb%/*/*}/magisk_merge.img
 
 # Get the system for A / B device
@@ -64,7 +64,7 @@ if [[ -z $mount_point ]]; then
   abort 'Could not find Magisk mount point'
 fi
 
-# and main_mod_path here
+# ... and main_mod_path here
 main_mod_path=$mount_point/mcc
 
 # Print module name
@@ -154,7 +154,7 @@ if [[ -f $image ]]; then
   img_total=$(imgsize_test 2)
   if [[ $img_used -eq $img_total ]]; then
     echo -e "- Resizing $image...\n"
-    resize2fs $image $(((img_used + 1) / 32 * 32 + 64))M
+    resize2fs $image $(((img_used + 1) / 32 * 32 + 32))M
   fi
 else
   echo -e "- Creating $image...\n"
@@ -186,7 +186,7 @@ get_prop() { sed -n s/^$1=//p $2; }
 cur_ver_code=$(get_prop versionCode $mod_path/module.prop || get_prop versionCode $main_mod_path/module.prop || echo 0)
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801151 ]]; then
+if [[ $cur_ver_code -ge 201801181 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"

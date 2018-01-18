@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801151 )
+# mcc Main Script ( 201801181 )
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -357,7 +357,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $data_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801151\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801181\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
@@ -367,7 +367,7 @@ if [[ $(uevent_f) = dummy_Path ]]; then
     --help            )               ;;
     --reconf          )               ;;
     --statreset       )               ;;
-    --service_trigger )               ;;
+    --start-service   )               ;;
     --daemon          ) if (! $(daemon_mode)); then
                           set_ctrl_refs
                         fi            ;;
@@ -453,8 +453,8 @@ case $1 in
   --disable) charge disable $2
   ;;
 
-## trigger service ( Magisk )
-  --service_trigger)
+## start service ( Magisk )
+  --start-service)
     while(:); do
 
       ## automatic power-off
