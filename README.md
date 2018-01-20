@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801181 )
+###### mcc README ( 201801201 )
 ###### MCMotherEffin' @ XDA Developers
 
 ### Intro
@@ -91,6 +91,10 @@
 
 ### Changelog
 
+##### Emlie
+
+*  --  Prevent service from delaying other modules' scripts
+
 ##### Dessert
 
 *  --  Fixed service being logged
@@ -100,11 +104,3 @@
 *  --  Fixed [ --force ] for close thresholds
 
 *  --  Code improvements
-
-##### Berry
-
-*  --  Fixed possible bootloops for devices with no xbin
-
-*  --  Code improvements
-
-*  --  New version name style
