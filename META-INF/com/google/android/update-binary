@@ -1,9 +1,9 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201801201 )
+# mcc update-binary ( 201801231 )
 # MCMotherEffin' @ XDA Developers
 
-if (! which su >/dev/null); then
+if (grep -q ^/sbin/sh /proc/$$/cmdline); then
 
   # Abort if recovery installation
   ## we parse uevents for boot mode only
@@ -22,9 +22,7 @@ echo ' '
 zip_file="$3"
 tmp_file=/dev/mcc_tmp/file
 mount_path=/dev/mcc_img
-mod_path=$mount_path/mcc
-main_mod_path=      # will be set later
-image=              # same as above
+mod_dir=$mount_path/mcc
 
 # Define functions
 
@@ -39,8 +37,6 @@ fi
 for func in $($magisk_bb --list); do
   alias $func="$magisk_bb $func"
 done
-
-# image is set here...
 image=${magisk_bb%/*/*}/magisk_merge.img
 
 # Get the system for A / B device
@@ -53,7 +49,7 @@ fi
 for loop_device in /dev/block/loop*; do
   if (losetup $loop_device | grep -q ${image%/*}/magisk.img); then
     for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
-      if [[ -f $mount_point/.core/hidelist ]]; then
+      if (grep -q com.google.android.gms.unstable $mount_point/.core/hidelist); then
         break 2
       fi
       unset mount_point
@@ -63,9 +59,7 @@ done
 if [[ -z $mount_point ]]; then
   abort 'Could not find Magisk mount point'
 fi
-
-# ... and main_mod_path here
-main_mod_path=$mount_point/mcc
+main_mod_dir=$mount_point/mcc
 
 # Print module name
 echo -e "------------------------------------------------\n"
@@ -79,7 +73,7 @@ echo -e "- Please make sure the device is charging\n"
 sleep 5
 echo -e "- Checking compatibility...\n"
 mkdir ${tmp_file%/*}
-find /sys/devices -type f -name uevent | grep -E 'batt|charg' >$tmp_file
+find /sys/devices -type f -name uevent | grep -Ei 'batt|charg' >$tmp_file
 
 is_charging() { grep -q =[Cc]harging$ $uevent; }
 
@@ -153,8 +147,8 @@ if [[ -f $image ]]; then
   img_used=$(($(imgsize_test 1) + 1))
   img_total=$(imgsize_test 2)
   if [[ $img_used -eq $img_total ]]; then
-    echo -e "- Resizing $image...\n"
-    resize2fs $image $(((img_used + 1) / 32 * 32 + 32))M
+    echo -e "- Expanding $image...\n"
+    resize2fs $image $((img_total + 64))M
   fi
 else
   echo -e "- Creating $image...\n"
@@ -183,35 +177,37 @@ fi
 get_prop() { sed -n s/^$1=//p $2; }
 
 # Get current version code
-cur_ver_code=$(get_prop versionCode $mod_path/module.prop || get_prop versionCode $main_mod_path/module.prop || echo 0)
+cur_ver_code=$(get_prop versionCode $mod_dir/module.prop || get_prop versionCode $main_mod_dir/module.prop || echo 0)
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801201 ]]; then
+if [[ $cur_ver_code -ge 201801231 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"
   echo -e "- Attention :- Uninstalling...\n"
-  rm -rf $mod_path $main_mod_path
+  rm -rf $mod_dir $main_mod_dir
 else
 
   # Install
 
-  # Create a clean path
-  rm -rf $mod_path; mkdir $mod_path;
+  # Create all needed directories
+  rm -rf $mod_dir
+  mkdir -p $mod_dir/docs; mkdir $mod_dir/cache
+  
 
   # Extract module files
   echo -e "- Extracting module files...\n"
-  unzip -o "$zip_file" 'system/*' 'data/*' service.sh module.prop -d $mod_path >&2
-  unzip -o "$zip_file" README.md -d $mod_path/data >&2
-  bin_path=$mod_path/system/xbin
+  unzip -o "$zip_file" 'system/*' mcc.conf service.sh module.prop -d $mod_dir >&2
+  unzip -o "$zip_file" LICENSE.md README.md -d $mod_dir/docs >&2
+  bin_dir=$mod_dir/system/xbin
   if [[ ! -d $system/xbin ]]; then
-    mv $bin_path $mod_path/system/bin
-    bin_path=$mod_path/system/bin
+    mv $bin_dir $mod_dir/system/bin
+    bin_dir=$mod_dir/system/bin
   fi
 
-  set_prop() { sed -i "s|^$1=.*|$1=$2|g" $mod_path/data/settings.conf; }
+  set_prop() { sed -i "s|^$1=.*|$1=$2|g" $mod_dir/mcc.conf; }
 
-  old_conf=$main_mod_path/data/settings.conf
+  old_conf=$main_mod_dir/data/settings.conf
   if [[ -f $old_conf ]]; then
 
     # Restore settings
@@ -234,13 +230,13 @@ else
      esac
   done
 
-  # Enable auto mount
-  touch $mod_path/auto_mount
+  # Enable magic mount
+  touch $mod_dir/auto_mount
 
   # Update info for Magisk Manager
-  mkdir $main_mod_path
-  touch $main_mod_path/update
-  cp -f $mod_path/module.prop $main_mod_path
+  mkdir $main_mod_dir
+  touch $main_mod_dir/update
+  cp -f $mod_dir/module.prop $main_mod_dir
 
   set_perm_recursive() {
     find $1 | while read entry; do
@@ -256,8 +252,8 @@ else
 
   # Set permissions
   echo -e "- Setting permissions...\n"
-  set_perm_recursive $mod_path 0 0 0644 0755
-  set_perm_recursive $bin_path 0 2000 0755 0755
+  set_perm_recursive $mod_dir 0 0 0644 0755
+  set_perm_recursive $bin_dir 0 2000 0755 0755
 fi
 
 # Unmount the image, and yippeee...

@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801201 )
+###### mcc README ( 201801231 )
 ###### MCMotherEffin' @ XDA Developers
 
 ### Intro
@@ -10,7 +10,7 @@
 
 * ##### Talking more is battery stats reset, and some other useful info
 
-* ##### Everything is interactive via shell CLI, run "mcc" from Terminal
+* ##### Everything has error handling, so don't worry
 
 * ##### Most basic tasks are automated
 
@@ -91,6 +91,10 @@
 
 ### Changelog
 
+##### Flesh o' Banana
+
+*  --  Some minor changes
+
 ##### Emlie
 
 *  --  Prevent service from delaying other modules' scripts
@@ -98,9 +102,3 @@
 ##### Dessert
 
 *  --  Fixed service being logged
-
-##### Candy
-
-*  --  Fixed [ --force ] for close thresholds
-
-*  --  Code improvements

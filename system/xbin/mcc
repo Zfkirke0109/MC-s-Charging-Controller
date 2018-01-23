@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801201 )
+# mcc Main Script ( 201801231 )
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -34,7 +34,7 @@ fi
 for loop_device in /dev/block/loop*; do
   if (losetup $loop_device | grep -q ${magisk_bb%/*/*}/magisk.img); then
     for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
-      if [[ -f $mount_point/.core/hidelist ]]; then
+      if (grep -q com.google.android.gms.unstable $mount_point/.core/hidelist); then
         break 2
       fi
       unset mount_point
@@ -48,9 +48,9 @@ fi
 
 # Define variables
 mod_dir=$mount_point/mcc
-data_dir=$mod_dir/data
-config=$data_dir/settings.conf
-ver_log=$data_dir/verbose.log
+cache_dir=$mod_dir/cache
+config=$mod_dir/mcc.conf
+ver_log=$cache_dir/verbose.log
 
 # Define functions
 
@@ -205,7 +205,7 @@ shut_threshold() { get_prop shut_threshold; }
 ## device must be charging throughout
 
 set_ctrl_refs() {
-  uevent_cache=$data_dir/uevent_cache.tmp
+  uevent_cache=$cache_dir/uevent_cache.tmp
 
   ## reset previous switches
   for i in 1 2 3 4; do
@@ -216,11 +216,9 @@ set_ctrl_refs() {
   echo -e "- Re-configuring sysfs references...\n"
 
   ## get all possible references
-  if [[ ! -f $uevent_cache ]]; then
-    find /sys/devices -type f -name uevent | grep -E 'batt|charg' >$uevent_cache
-  fi
+  find /sys/devices -type f -name uevent | grep -Ei 'batt|charg' >$uevent_cache
 
-  echo_write() { echo $1 >$2 2>/dev/null; }
+  echo_ref() { echo $1 >$ref 2>/dev/null; }
 
   while read uevent; do
 
@@ -228,11 +226,6 @@ set_ctrl_refs() {
     if (grep -q ^POWER_SUPPLY_.*=.*[Bb]att.*$ $uevent); then
       set_prop uevent $uevent
 
-      ## ask and wait for charger
-      ## mcc in installed, thus is safe
-      while (! is_charging); do
-        echo -e "- Caution :- Device seem not charging\n"; sleep 5;
-      done; sleep 0.2
       i=1
       for ref in ${uevent%/*}/*; do
       if [[ ! -f $ref ]]; then continue; fi
@@ -241,34 +234,34 @@ set_ctrl_refs() {
         ## cycling through all, get a boolean switch
         case $(cat $ref) in
           1       )
-            echo_write 0 $ref
+            echo_ref 0
             c_ON=1; c_OFF=0;              ;;
           0       )
-            echo_write 1 $ref
+            echo_ref 1
             c_ON=0; c_OFF=1;              ;;
           on      )
-            echo_write off $ref
+            echo_ref off
             c_ON=on; c_OFF=off;           ;;
           off     )
-            echo_write on $ref
+            echo_ref on
             c_ON=off; c_OFF=on;           ;;
           true    )
-            echo_write false $ref
+            echo_ref false
             c_ON=true; c_OFF=false;       ;;
           false   )
-            echo_write true $ref
+            echo_ref true
             c_ON=false; c_OFF=true;       ;;
           enable  )
-            echo_write disable $ref
+            echo_ref disable
             c_ON=enable; c_OFF=disable;   ;;
           disable )
-            echo_write enable $ref
+            echo_ref enable
             c_ON=disable; c_OFF=enable;   ;;
           enabled )
-            echo_write disabled $ref
+            echo_ref disabled
             c_ON=enabled; c_OFF=disabled; ;;
           disabled)
-            echo_write enabled $ref
+            echo_ref enabled
             c_ON=disabled; c_OFF=enabled; ;;
           *       )
             continue                      ;;
@@ -276,7 +269,7 @@ set_ctrl_refs() {
 
         ## test if that works correctly,
         if (! is_charging); then
-          echo_write $c_ON $ref; sleep 0.2;
+          echo_ref $c_ON; sleep 0.2;
           if (is_charging); then
 
             ## yes it do, add it
@@ -285,7 +278,7 @@ set_ctrl_refs() {
             if [[ $i -eq 5 ]]; then break 2; fi
           fi
         fi
-        echo_write $c_ON $ref
+        echo_ref $c_ON
       done
       if [[ $i -gt 1 ]]; then break; fi
     fi
@@ -309,16 +302,12 @@ set_ctrl_refs() {
 # Function for [ --enable / --disable ] [ % / time ]
 
 charge() {
-  case $1 in
-    enable)
-      turn_1=ON; turn_2=OFF;
-      text=enabled; test='! is_charging';
-    ;;
-    *     )
-      turn_1=OFF; turn_2=ON;
-      text=disabled; test='is_charging';
-    ;;
-  esac
+  turn_1=OFF; turn_2=ON;
+  text=disabled; test='is_charging';
+  if [[ $1 = enable ]]; then
+    turn_1=ON; turn_2=OFF;
+    text=enabled; test='! is_charging';
+  fi
   if [[ ! -z $2 ]]; then
     if (echo $2 | grep -Eq ^[0-9]+%$); then
       level=$(echo $2 | tr -d %)
@@ -354,10 +343,10 @@ set +x
 # Verbose logger
 if [[ ! $no_logging ]]; then
   if [[ -f $ver_log ]]; then
-    mv -f $ver_log $data_dir/verbose_last.log
+    mv -f $ver_log $cache_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801201\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801231\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
@@ -419,7 +408,7 @@ case $1 in
         '### Changelog') break        ;;
         *              ) echo "$line" ;;
       esac
-    done <$data_dir/README.md
+    done <$mod_dir/docs/README.md
   ;;
 
 ## re-test and configure sysfs references
@@ -444,7 +433,7 @@ case $1 in
   ;;
 
 ## enable charging
-## ( on demand or for certain % / time )
+## ( either on demand or for certain % / time )
   --enable) charge enable $2
   ;;
 
@@ -526,7 +515,7 @@ case $1 in
     test_toggle daemon_mode 'Daemon mode'
   ;;
 
-## with no arguments, ask user to go help
+## with no arguments, ask user to go to help
   *)
     echo -e "- Heyyo fella,\n"
     echo -e "-- Please run \"mcc --help\" for help\n"
