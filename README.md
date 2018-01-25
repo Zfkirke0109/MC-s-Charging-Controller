@@ -1,8 +1,13 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801231 )
+###### mcc README ( 201801251 )
 ###### MCMotherEffin' @ XDA Developers
 
+
+###### Copyright (c) 2018 Jaymin Suthar "@MCMotherEffin'"
+
+
 ### Intro
+
 
 * ##### It is meant for to extend Lithium batteries' life by controlling charging
 
@@ -16,7 +21,9 @@
 
 * ##### It is inspired from @VR25's 'Magic Charging Switch'
 
+
 ### Usage
+
 
 ##### mcc [ ARG_1 ] [ ARG_2 ].....
 
@@ -80,7 +87,9 @@
 
                 :- Show this help message
 
+
 ### Notes
+
 
 *  --  Device must be charging while installing / [ --reconf ]
 
@@ -89,7 +98,13 @@
 *  --------  Addressing both the above, I welcome you to suggest me what the UI should be alike
 *  --------  And what the strings really should be
 
+
 ### Changelog
+
+
+##### Gulab Jamoon
+
+*  --  Fixed 'BusyBox not found'
 
 ##### Flesh o' Banana
 
@@ -98,7 +113,3 @@
 ##### Emlie
 
 *  --  Prevent service from delaying other modules' scripts
-
-##### Dessert
-
-*  --  Fixed service being logged

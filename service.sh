@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Service ( 201801231 )
+# mcc Service ( 201801251 )
 # MCMotherEffin' @ XDA Developers
 
 # Verbose logger

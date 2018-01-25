@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801231 )
+# mcc Main Script ( 201801251 )
 # MCMotherEffin' @ XDA Developers
 
 # Make sure mcc is running as root
@@ -15,8 +15,17 @@ fi
 echo ' '
 
 # Set busybox up
-magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
-if [ ! -x "$magisk_bb" ]; then
+for magisk_bb in $(find /data -type f -name busybox | grep /magisk/busybox$); do
+  if [ -x "$magisk_bb" ]; then
+    if ($magisk_bb | grep -q topjohnwu); then
+      if [ -f "${magisk_bb%/*/*}/magisk.img" ]; then
+        break
+      fi
+    fi
+  fi
+  unset magisk_bb
+done
+if [ -z "$magisk_bb" ]; then
   echo -e "- Abort :- Could not find Magisk internal busybox\n"
   exit 1
 fi
@@ -346,7 +355,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $cache_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801231\n\n" >>$ver_log
+  echo -e "\n\nversionCode = 201801251\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 

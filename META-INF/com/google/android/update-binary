@@ -1,6 +1,6 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201801231 )
+# mcc update-binary ( 201801251 )
 # MCMotherEffin' @ XDA Developers
 
 if (grep -q ^/sbin/sh /proc/$$/cmdline); then
@@ -29,8 +29,17 @@ mod_dir=$mount_path/mcc
 abort() { echo -e "- Abort :- $1\n"; exit 1; }
 
 # Set busybox up
-magisk_bb=$(find /data -type f -name busybox | grep /magisk/busybox$)
-if [ ! -x "$magisk_bb" ]; then
+for magisk_bb in $(find /data -type f -name busybox | grep /magisk/busybox$); do
+  if [ -x "$magisk_bb" ]; then
+    if ($magisk_bb | grep -q topjohnwu); then
+      if [ -f "${magisk_bb%/*/*}/magisk.img" ]; then
+        break
+      fi
+    fi
+  fi
+  unset magisk_bb
+done
+if [ -z "$magisk_bb" ]; then
   echo -e "- Error :- Could not find Magisk internal busybox\n"
   abort 'Please install Magisk v14.0+'
 fi
@@ -180,7 +189,7 @@ get_prop() { sed -n s/^$1=//p $2; }
 cur_ver_code=$(get_prop versionCode $mod_dir/module.prop || get_prop versionCode $main_mod_dir/module.prop || echo 0)
 
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801231 ]]; then
+if [[ $cur_ver_code -ge 201801251 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"
