@@ -1,0 +1,32 @@
+#!/system/bin/sh
+# MC's Charging Controller
+# mcc Service Checker ( 201802092 )
+# MCMotherEffin' @ XDA Developers
+
+# Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
+
+# Make sure mcc-check is running as root
+if (! id | grep uid=0 >/dev/null); then
+  su -c mcc-check; exit $?;
+fi
+
+# Verbose logger
+set -x 2>/cache/mcc_check.log
+echo ' '
+
+# Busybox must be installed into /cache/mcc_busybox
+export PATH=/cache/mcc_busybox:$PATH
+
+# Check whether mcc Service is running
+if (! ps | grep -v ' grep ' | grep ' root ' | grep ' {mcc} ' | grep -q ' --start-service$'); then
+  echo -e "mcc Service is not running, forking it...\n"
+  setsid mcc --start-service
+  echo -e "It's running now\n"
+else
+  echo -e "mcc Service is already running\n"
+fi
+
+# An important thang
+## this functionality could directly be implemented into main Script as [ --ckservice ] option
+## but calling setsid PROG ARGS from PROG itself will cause some undesirable effect
+## thus, this separate script is needed

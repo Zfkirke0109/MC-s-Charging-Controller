@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201802091 )
+# mcc Main Script ( 201802092 )
 # MCMotherEffin' @ XDA Developers
 
 # Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
@@ -381,7 +381,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $cache_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode == 201802091\n\n" >>$ver_log
+  echo -e "\n\nversionCode == 201802092\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
