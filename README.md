@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201802092 )
+###### mcc README ( 201802093 )
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -104,6 +104,12 @@
 
 ### Changelog
 
+##### Imerty MR
+
+* Fixed mcc-check running exec instead of fork
+
+* Fixed service logging with mcc-check
+
 ##### Imerty
 
 * Added a new command 'mcc-check'
@@ -129,7 +135,3 @@
 * Better environment setup
 
 * Other code improvements
-
-##### Gulab Jamoon
-
-* Fixed 'BusyBox not found'

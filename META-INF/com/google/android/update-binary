@@ -1,6 +1,6 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201802092 )
+# mcc update-binary ( 201802093 )
 # MCMotherEffin' @ XDA Developers
 
 # Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
@@ -188,7 +188,7 @@ get_prop() { sed -n s/^$1=//p $2; }
 # Detect whether to install / uninstall
 mod_dir=$mount_point/mcc
 main_mod_dir=$m_point/mcc
-if [[ $(get_prop versionCode $mod_dir/module.prop || get_prop versionCode $main_mod_dir/module.prop || echo 0) -ge 201802092 ]]; then
+if [[ $(get_prop versionCode $mod_dir/module.prop || get_prop versionCode $main_mod_dir/module.prop || echo 0) -ge 201802093 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"

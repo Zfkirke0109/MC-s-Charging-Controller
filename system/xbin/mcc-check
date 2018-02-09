@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Service Checker ( 201802092 )
+# mcc Service Checker ( 201802093 )
 # MCMotherEffin' @ XDA Developers
 
 # Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
@@ -20,7 +20,7 @@ export PATH=/cache/mcc_busybox:$PATH
 # Check whether mcc Service is running
 if (! ps | grep -v ' grep ' | grep ' root ' | grep ' {mcc} ' | grep -q ' --start-service$'); then
   echo -e "mcc Service is not running, forking it...\n"
-  setsid mcc --start-service
+  ( (no_logging=true mcc --start-service) & )
   echo -e "It's running now\n"
 else
   echo -e "mcc Service is already running\n"
