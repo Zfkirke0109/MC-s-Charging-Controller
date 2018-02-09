@@ -1,9 +1,19 @@
 ###### MC's Charging Controller
-###### mcc README ( 201801251 )
+###### mcc README ( 201802091 )
 ###### MCMotherEffin' @ XDA Developers
 
 
-###### Copyright (c) 2018 Jaymin Suthar "@MCMotherEffin'"
+###### Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
+
+
+### Links
+
+
+* [Source](https://github.com/Magisk-Modules-Repo/MC-s-Charging-Controller)
+
+* [Support](https://forum.xda-developers.com/apps/magisk/mcs-charging-controller-t3739371)
+
+* [Donate](https://paypal.me/JayminSuthar)
 
 
 ### Intro
@@ -19,7 +29,7 @@
 
 * ##### Most basic tasks are automated
 
-* ##### It is inspired from @VR25's 'Magic Charging Switch'
+* ##### Initially inspired from @VR25's 'Magic Charging Switch'
 
 
 ### Usage
@@ -29,63 +39,63 @@
 
 ##### Arguments can be
 
-*           [ --reset ] [ DISABLE % ] [ ENABLE % ]
+*  [ --set ] [ DISABLE % ] [ ENABLE % ]
 
-                :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
-                :-       [ ENABLE % ] is optional
-                :-       Defaults :- 70 60
+        :- Set thresholds ( % ) used by daemon mode for turning charging ON / OFF
+        :-       [ ENABLE % ] is optional
+        :-       Defaults :- 70 60
 
-*           [ --shut ] [ SHUT % ]
+*  [ --shut ] [ SHUT % ]
 
-                :- Set threshold ( % ) for automatically powering the device OFF
-                :-       Default  :- 20
+        :- Set threshold ( % ) for automatically powering the device OFF
+        :-       Default  :- 20
 
-*           [ --force ] [ ARGS ACCORDINGLY ].....
+*  [ --force ] [ ARGS ACCORDINGLY ].....
 
-                :- Same as [ --reset ] [ DISABLE % ] [ ENABLE % ]
-                :-       or [ --shut ] [ SHUT % ],
-                :-       Except for no limitations are applied
+        :- Same as [ --set ] [ DISABLE % ] [ ENABLE % ]
+        :-       or [ --shut ] [ SHUT % ],
+        :-       Except for no limitations are applied
 
-*           [ --enable ] [ % / time ]
+*  [ --enable ] [ % / time ]
 
-                :- Enable charging for given time / until certain % 
-                :-       [ % / time ] is optional
-                :-       Time can be 30 ( 30 seconds ), 8m ( 8 minutes ) or 2h ( 2 hours )
-                :-       Level can be 60%, 55% or 19%
+        :- Enable charging for given time / until certain % 
+        :-       [ % / time ] is optional
+        :-       Time can be 30 ( 30 seconds ), 8m ( 8 minutes ) or 2h ( 2 hours )
+        :-       Level can be 60%, 55% or 19%
 
-*           [ --disable ] [ % / time ]
+*  [ --disable ] [ % / time ]
 
-                :- Same as above, except for charging is disabled
+        :- Same as above, except for charging is disabled
 
-*           [ --daemon ]
+*  [ --daemon ]
 
-                :- Toggle Magisk daemon mode ON / OFF
-                :-       Default  :- ON
+        :- Toggle Magisk daemon mode ON / OFF
+        :-       Default  :- ON
 
-*           [ --autoshut ]
+*  [ --autoshut ]
 
-                :- Toggle automatic power-off ON / OFF
-                :-       Default  :- ON
+        :- Toggle automatic power-off ON / OFF
+        :-       Default  :- ON
 
-*           [ --default ]
+*  [ --default ]
 
-                :- Reset all thresholds to defaults
+        :- Reset all thresholds to defaults
 
-*           [ --info ]
+*  [ --info ]
 
-                :- Show some useful information
+        :- Show some useful information
 
-*           [ --statreset ]
+*  [ --statreset ]
 
-                :- Reset battery statistics
+        :- Reset battery statistics
 
-*           [ --reconf ]
+*  [ --reconf ]
 
-                :- Re-configure sysfs references
+        :- Re-configure sysfs references
 
-*           [ --help ]
+*  [ --help ]
 
-                :- Show this help message
+        :- Show this help message
 
 
 ### Notes
@@ -93,14 +103,36 @@
 
 *  --  Device must be charging while installing / [ --reconf ]
 
-*  --  I'm an Indian, so please forgive me some bad English,
-*  --------  Also I'm not an artist, so please forgive me some bad UI ( shell CLI ),
-*  --------  Addressing both the above, I welcome you to suggest me what the UI should be alike
-*  --------  And what the strings really should be
+*  --  [ --statreset ] might not work on some ROMs
+
+*  --  It re-installs busybox to /cache/mcc_busybox ( about 1MB )
+
+*  --  Every single task is accurated by 10 seconds
+
+*  --  If you like my work, please consider donating to me
 
 
 ### Changelog
 
+
+##### Handwo
+
+*  --  Fixed a bug with never resuming charging with some typical kernels
+*  --  Daemon is more stable, now testing current
+*  --  Battery stats are now reset on power-off
+*  --  README is a bit improved
+*  --  [ --reset ] is now [ --set ]
+*  --------    thanks to @CCL108XIV for his extensive testing, reporting and reasoning
+
+*  --  Fixed rebooting while checking compatibility
+
+*  --  Added /sys/module into references lookup path
+
+*  --  Improved charging control
+
+*  --  Better environment setup
+
+*  --  Some minor changes
 
 ##### Gulab Jamoon
 
@@ -109,7 +141,3 @@
 ##### Flesh o' Banana
 
 *  --  Some minor changes
-
-##### Emlie
-
-*  --  Prevent service from delaying other modules' scripts

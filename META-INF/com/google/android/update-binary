@@ -1,15 +1,17 @@
 #!/sbin/sh
 # MC's Charging Controller
-# mcc update-binary ( 201801251 )
+# mcc update-binary ( 201802091 )
 # MCMotherEffin' @ XDA Developers
 
-if (grep -q ^/sbin/sh /proc/$$/cmdline); then
+# Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
+
+if (grep '^/sbin/sh' </proc/$$/cmdline >/dev/null); then
 
   # Abort if recovery installation
   ## we parse uevents for boot mode only
-  fd=/proc/self/fd/$2
+  ui_fd=/proc/self/fd/$2
 
-  ui_print() { echo -e "ui_print $1\nui_print" >>$fd; }
+  ui_print() { echo -e "ui_print $1\nui_print" >>$ui_fd; }
 
   ui_print ' '; ui_print ' ';
   ui_print '- Abort :- Please install in boot mode'
@@ -20,55 +22,48 @@ echo ' '
 
 # Define variables
 zip_file="$3"
-tmp_file=/dev/mcc_tmp/file
-mount_path=/dev/mcc_img
-mod_dir=$mount_path/mcc
 
 # Define functions
 
 abort() { echo -e "- Abort :- $1\n"; exit 1; }
 
-# Set busybox up
+# Get the system minding A / B devices
+system=/system
+if [ -d /system_root ]; then
+  system+=_root/system
+fi
+
+# Find busybox and Magisk mount point
 for magisk_bb in $(find /data -type f -name busybox | grep /magisk/busybox$); do
-  if [ -x "$magisk_bb" ]; then
-    if ($magisk_bb | grep -q topjohnwu); then
-      if [ -f "${magisk_bb%/*/*}/magisk.img" ]; then
-        break
-      fi
+  if ($magisk_bb | grep 'topjohnwu ' >/dev/null); then
+    image=${magisk_bb%/*/*}/magisk.img
+    if [ -f $image ]; then
+      for loop_device in /dev/block/loop*; do
+        if ($magisk_bb losetup $loop_device | grep " $image$" >/dev/null); then
+          for m_point in $(grep "^$loop_device " /proc/mounts | $magisk_bb awk '{print $2}' | grep -Ev "^$system|^/vendor"); do
+            if (grep com.google.android.gms.unstable $m_point/.core/hidelist >/dev/null); then
+              break 3
+            fi
+            unset m_point
+          done
+        fi
+      done
     fi
   fi
   unset magisk_bb
 done
-if [ -z "$magisk_bb" ]; then
-  echo -e "- Error :- Could not find Magisk internal busybox\n"
-  abort 'Please install Magisk v14.0+'
-fi
-for func in $($magisk_bb --list); do
-  alias $func="$magisk_bb $func"
-done
-image=${magisk_bb%/*/*}/magisk_merge.img
-
-# Get the system for A / B device
-system=/system
-if [[ -d /system_root ]]; then
-  system=/system_root/system
+if [ -z $magisk_bb ] || [ -z $m_point ]; then
+  abort 'Could not set environment based on Magisk'
 fi
 
-# Detect Magisk mount point
-for loop_device in /dev/block/loop*; do
-  if (losetup $loop_device | grep -q ${image%/*}/magisk.img); then
-    for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
-      if (grep -q com.google.android.gms.unstable $mount_point/.core/hidelist); then
-        break 2
-      fi
-      unset mount_point
-    done
-  fi
-done
-if [[ -z $mount_point ]]; then
-  abort 'Could not find Magisk mount point'
-fi
-main_mod_dir=$mount_point/mcc
+# Set busybox up ( using hardlinks )
+tmp_dir=/dev/mcc_tmp
+tmp_bin=$tmp_dir/busybox
+mkdir -p $tmp_bin
+rm -rf $tmp_bin/.
+cp -a $magisk_bb $tmp_bin
+$tmp_bin/busybox --install $tmp_bin
+export PATH=$tmp_bin:$PATH
 
 # Print module name
 echo -e "------------------------------------------------\n"
@@ -81,17 +76,23 @@ echo -e "------------------------------------------------\n"
 echo -e "- Please make sure the device is charging\n"
 sleep 5
 echo -e "- Checking compatibility...\n"
-mkdir ${tmp_file%/*}
-find /sys/devices -type f -name uevent | grep -Ei 'batt|charg' >$tmp_file
+tmp_file=$tmp_dir/cached
+find /sys/devices /sys/module -type f -name uevent >$tmp_file
 
-is_charging() { grep -q =[Cc]harging$ $uevent; }
+is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $uevent; }
 
 while read uevent; do
-  if (grep -q ^POWER_SUPPLY_.*=.*[Bb]att.*$ $uevent); then
+  if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
     i=0
     for ref in ${uevent%/*}/*; do
-      if [[ ! -f $ref ]]; then continue; fi
-      chown 0:0 $ref; chmod 644 $ref;
+      if [[ -f $ref ]]; then
+        if (! ls -l $ref | awk '{print $1}' | grep -q w); then
+          continue
+        fi
+      else
+        continue
+      fi
+      chmod u+r $ref
       case $(cat $ref) in
         1       )
           echo 0 >$ref
@@ -139,23 +140,21 @@ while read uevent; do
     if [[ $i -gt 0 ]]; then break; fi
   fi
 done <$tmp_file
-rm -rf ${tmp_file%/*}
 if [[ $i -eq 0 ]]; then
   abort "Your device don't support these functionalities"
 fi
 echo -e "- OK\n"
 
-# Resize or create image for installation
+# Create or resize image for installation
+image=${image%/*}/magisk_merge.img
 if [[ -f $image ]]; then
-  echo -e "- Found $image\n"
+  echo -e "- $image exists\n"
 
   imgsize_test() {
     e2fsck -n $image | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$1 | awk '{print int($1 / 256)}'
   }
 
-  img_used=$(($(imgsize_test 1) + 1))
-  img_total=$(imgsize_test 2)
-  if [[ $img_used -eq $img_total ]]; then
+  if [[ $(($(imgsize_test 1) + 1)) -eq $(imgsize_test 2) ]]; then
     echo -e "- Expanding $image...\n"
     resize2fs $image $((img_total + 64))M
   fi
@@ -164,18 +163,19 @@ else
   make_ext4fs -l 64M $image >&2
 fi
 
-is_mounted() { grep -q " $mount_path " /proc/mounts; }
+is_mounted() { grep -q " $mount_point " /proc/mounts; }
 
 # Mount the image
+mount_point=/dev/mcc_img
 echo -e "- Mounting $image...\n"
-mkdir $mount_path
-for loop in 0 1 2 3 4 5 6 7; do
-  loop_device=/dev/block/loop$loop
+mkdir $mount_point
+for minor in 0 1 2 3 4 5 6 7; do
+  loop_device=/dev/block/loop$minor
   if [[ ! -b $loop_device ]]; then
-    mknod $loop_device b 7 $loop
+    mknod $loop_device b 7 $minor
   fi
   if (losetup $loop_device $image); then
-    mount -t ext4 -o loop $loop_device $mount_path
+    mount -t ext4 -o loop $loop_device $mount_point
   fi
   if (is_mounted); then break; fi
 done
@@ -185,11 +185,10 @@ fi
 
 get_prop() { sed -n s/^$1=//p $2; }
 
-# Get current version code
-cur_ver_code=$(get_prop versionCode $mod_dir/module.prop || get_prop versionCode $main_mod_dir/module.prop || echo 0)
-
 # Detect whether to install / uninstall
-if [[ $cur_ver_code -ge 201801251 ]]; then
+mod_dir=$mount_point/mcc
+main_mod_dir=$m_point/mcc
+if [[ $(get_prop versionCode $mod_dir/module.prop || get_prop versionCode $main_mod_dir/module.prop || echo 0) -ge 201802091 ]]; then
 
   # Uninstall
   echo -e "- Same or newer already installed\n"
@@ -201,7 +200,7 @@ else
 
   # Create all needed directories
   rm -rf $mod_dir
-  mkdir -p $mod_dir/docs; mkdir $mod_dir/cache
+  mkdir -p $mod_dir/docs $mod_dir/cache
   
 
   # Extract module files
@@ -210,14 +209,18 @@ else
   unzip -o "$zip_file" LICENSE.md README.md -d $mod_dir/docs >&2
   bin_dir=$mod_dir/system/xbin
   if [[ ! -d $system/xbin ]]; then
+
+    # Target tree missing from system root
+    ## thus, Magic Mounting can be too dangerous
+    ## So, install mcc in system internal executable path
+    ## for it is guaranteed to exist
     mv $bin_dir $mod_dir/system/bin
     bin_dir=$mod_dir/system/bin
   fi
 
   set_prop() { sed -i "s|^$1=.*|$1=$2|g" $mod_dir/mcc.conf; }
 
-  old_conf=$main_mod_dir/data/settings.conf
-  if [[ -f $old_conf ]]; then
+  if old_conf=$(ls $main_mod_dir/mcc.conf || ls $main_mod_dir/data/settings.conf); then
 
     # Restore settings
     echo -e "- Restoring settings...\n"
@@ -226,7 +229,7 @@ else
     done
   fi
 
-  # Set uevent and switches in settings.conf
+  # Set uevent and switches in mcc.conf
   set_prop uevent $uevent
   for i in 0 1 2 3; do
     case ${switches[i]} in
@@ -236,7 +239,7 @@ else
       * )
         set_prop switch_$((i + 1)) "${switches[i]}"
       ;;
-     esac
+    esac
   done
 
   # Enable magic mount
@@ -249,11 +252,11 @@ else
 
   set_perm_recursive() {
     find $1 | while read entry; do
-      chown $2:$3 $entry
-      if [[ -f $entry ]]; then
-        chmod $4 $entry
+      chown 0:$2 $entry
+      if [[ ! -d $entry ]]; then
+        chmod $3 $entry
       else
-        chmod $5 $entry
+        chmod 0755 $entry
       fi
       chcon u:object_r:system_file:s0 $entry
     done
@@ -261,12 +264,15 @@ else
 
   # Set permissions
   echo -e "- Setting permissions...\n"
-  set_perm_recursive $mod_dir 0 0 0644 0755
-  set_perm_recursive $bin_dir 0 2000 0755 0755
+  set_perm_recursive $mod_dir    0 0644
+  set_perm_recursive $bin_dir 2000 0755
 fi
 
-# Unmount the image, and yippeee...
-umount $mount_path; losetup -d $loop_device;
-rmdir $mount_path
+# Unmount the image
+umount $mount_point; losetup -d $loop_device;
+rmdir $mount_point
+
+# Cleanup
+rm -rf $tmp_dir
 echo -e "- Done\n"
 exit 0

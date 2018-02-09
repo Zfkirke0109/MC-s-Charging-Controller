@@ -1,23 +1,18 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Service ( 201801251 )
+# mcc Service ( 201802091 )
 # MCMotherEffin' @ XDA Developers
+
+# Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
 
 # Verbose logger
 set -x 2>${0%/*}/cache/service.log
 
-# Make sure all switches are writable
+# Make sure all switches are readable
 for i in 1 2 3 4; do
   switch=$(sed -n s/^switch_$i=//p ${0%/*}/mcc.conf | awk '{print $1}')
-  case $switch in
-    dummy_Path)
-      break
-    ;;
-    *         )
-      chown 0:0 $switch
-      chmod 644 $switch
-    ;;
-  esac
+  if [[ $switch == dummy_Path ]]; then break; fi
+  chmod u+r $switch
 done
 
 # Start the service minding [ --autoshut ]

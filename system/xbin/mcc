@@ -1,59 +1,59 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201801251 )
+# mcc Main Script ( 201802091 )
 # MCMotherEffin' @ XDA Developers
 
+# Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
+
 # Make sure mcc is running as root
-if (! id | grep -q uid=0); then
-  su -c mcc $@; exit $?;
+if (! id | grep uid=0 >/dev/null); then
+  su -c mcc "$@"; exit $?;
 fi
 
 # Environment logger
-if [ ! "$no_logging" ]; then
+if [ ! $no_logging ]; then
   set -x 2>/cache/mcc_env.log
 fi
 echo ' '
 
-# Set busybox up
+# Get system minding A / B devices
+system=/system
+if [ -d /system_root ]; then
+  system+=_root/system
+fi
+
+# Find busybox and Magisk mount point
 for magisk_bb in $(find /data -type f -name busybox | grep /magisk/busybox$); do
-  if [ -x "$magisk_bb" ]; then
-    if ($magisk_bb | grep -q topjohnwu); then
-      if [ -f "${magisk_bb%/*/*}/magisk.img" ]; then
-        break
-      fi
+  if ($magisk_bb | grep 'topjohnwu ' >/dev/null); then
+    image=${magisk_bb%/*/*}/magisk.img
+    if [ -f $image ]; then
+      for loop_device in /dev/block/loop*; do
+        if ($magisk_bb losetup $loop_device | grep " $image$" >/dev/null); then
+          for mount_point in $(grep "^$loop_device " /proc/mounts | $magisk_bb awk '{print $2}' | grep -Ev "^$system|^/vendor"); do
+            if (grep com.google.android.gms.unstable $mount_point/.core/hidelist >/dev/null 2>&1); then
+              break 3
+            fi
+            unset mount_point
+          done
+        fi
+      done
     fi
   fi
   unset magisk_bb
 done
-if [ -z "$magisk_bb" ]; then
-  echo -e "- Abort :- Could not find Magisk internal busybox\n"
+if [ -z $magisk_bb ] || [ -z $mount_point ]; then
+  echo -e "- Abort :- Could not set environment based on Magisk\n"
   exit 1
 fi
-for func in $($magisk_bb --list); do
-  alias $func="$magisk_bb $func" 2>/dev/null
-done
 
-# Get system for A / B device
-system=/system
-if [[ -d /system_root ]]; then
-  system=/system_root/system
+# Set busybox up ( using hardlinks )
+tmp_bin=/cache/mcc_busybox
+if (! mkdir $tmp_bin 2>/dev/null && ! $magisk_bb cmp -s $magisk_bb $tmp_bin/busybox); then
+  rm -rf $tmp_bin/. 2>/dev/null
+  cp -a $magisk_bb $tmp_bin
+  $tmp_bin/busybox --install $tmp_bin
 fi
-
-# Detect Magisk mount point
-for loop_device in /dev/block/loop*; do
-  if (losetup $loop_device | grep -q ${magisk_bb%/*/*}/magisk.img); then
-    for mount_point in $(grep "$loop_device " /proc/mounts | awk '{print $2}' | grep -v ^$system); do
-      if (grep -q com.google.android.gms.unstable $mount_point/.core/hidelist); then
-        break 2
-      fi
-      unset mount_point
-    done
-  fi
-done
-if [[ -z $mount_point ]]; then
-  echo -e "- Abort :- Could not find Magisk mount point\n"
-  exit 1
-fi
+export PATH=$tmp_bin:$PATH
 
 # Define variables
 mod_dir=$mount_point/mcc
@@ -83,13 +83,19 @@ set_prop() {
   sed -i "s|^$1=.*|$1=$2|g" $prop_file
 }
 
+## tests if the argument belongs to 0 - 100
+
+test_bound() {
+  if [[ $1 -le 0 || $1 -ge 100 ]]; then
+    abort 'Please give a level between 0 - 100'
+  fi
+}
+
 ## tests if the argument is a battery level
 
 test_level() {
   if (echo $1 | grep -Eq ^[0-9]+$); then
-    if [[ $1 -le 0 || $1 -ge 100 ]]; then
-      abort 'Please give a level between 0 - 100'
-    fi
+    test_bound $1
   else
     abort 'Please give only numbers'
   fi
@@ -98,10 +104,8 @@ test_level() {
 ## tests if arguments are not so close
 
 test_diff() {
-  if [[ ! $1 -ge $(($2 + 5)) ]]; then
-    if [[ ! $force ]]; then
-      abort "Please don't give this close thresholds"
-    fi
+  if [[ ! $1 -ge $(($2 + 5)) && ! $force ]]; then
+    abort "Please don't give this close thresholds"
   fi
 }
 
@@ -129,19 +133,24 @@ toggle() {
 switch_() {
   for i in 1 2 3 4; do
     switch=$(get_prop switch_$i | awk '{print $1}')
-    case $switch in
-      dummy_Path)
-        break
+    if [[ $switch == dummy_Path ]]; then
+      break
+    fi
+    case $1 in
+      ON)
+        get_prop switch_$i | awk '{print $2}' >$switch
       ;;
-      *         )
-        case $1 in
-          ON) get_prop switch_$i | awk '{print $2}' >$switch ;;
-          * ) get_prop switch_$i | awk '{print $3}' >$switch ;;
-        esac
+      * )
+        get_prop switch_$i | awk '{print $3}' >$switch
       ;;
     esac
+	reset_stats >/dev/null
   done
 }
+
+## repeatedly used in 'charge()'
+
+test_switch() { if (eval $test); then switch_ $turn_1; fi; }
 
 ## performs some pre-'charge()' actions
 
@@ -150,17 +159,14 @@ charge_acts() {
     set_prop daemon_mode false
     overridden=true
   fi
-  if (eval $test); then switch_ $turn_1; fi
+  test_switch
 }
 
 ## tests and updates up, down_threshold
 
 test_update_udt() {
   if [[ ! -z $2 ]]; then
-    if [[ $1 -lt 15 || $2 -lt 15 ]]; then
-      gerror=true
-    fi
-    if [[ $1 -gt 85 || $2 -gt 85 ]]; then
+    if [[ $1 -lt 15 || $2 -lt 15 || $1 -gt 85 || $2 -gt 85 ]]; then
       gerror=true
     fi
   else
@@ -183,8 +189,8 @@ test_update_udt() {
   if [[ $gerror && ! $force ]]; then
     abort 'Please give a level between 15 - 85'
   fi
-  if [[ ! $u ]]; then u=$1; fi
-  if [[ ! $d ]]; then d=$2; fi
+  if [[ -z $u ]]; then u=$1; fi
+  if [[ -z $d ]]; then d=$2; fi
   set_prop up_threshold $u
   set_prop down_threshold $d
   echo -e "- New values saved\n"
@@ -192,7 +198,7 @@ test_update_udt() {
 
 ## tests whether the device is charging
 
-is_charging() { grep -q =[Cc]harging$ $(uevent_f); }
+is_charging() { grep -q ^POWER_SUPPLY_STATUS=[Cc]harging$ $(uevent_f); }
 
 # Always get props in realtime
 
@@ -225,20 +231,25 @@ set_ctrl_refs() {
   echo -e "- Re-configuring sysfs references...\n"
 
   ## get all possible references
-  find /sys/devices -type f -name uevent | grep -Ei 'batt|charg' >$uevent_cache
+  find /sys/devices /sys/module -type f -name uevent >$uevent_cache 2>/dev/null
 
   echo_ref() { echo $1 >$ref 2>/dev/null; }
 
   while read uevent; do
 
     ## cycling through all, get a matching uevent file
-    if (grep -q ^POWER_SUPPLY_.*=.*[Bb]att.*$ $uevent); then
+    if (grep -q ^POWER_SUPPLY_NAME=.*[Bb]att.*$ $uevent); then
       set_prop uevent $uevent
-
       i=1
       for ref in ${uevent%/*}/*; do
-      if [[ ! -f $ref ]]; then continue; fi
-        chown 0:0 $ref; chmod 644 $ref;
+        if [[ -f $ref ]]; then
+          if (! ls -l $ref | awk '{print $1}' | grep -q w); then
+            continue
+          fi
+        else
+          continue
+        fi
+        chmod u+r $ref
 
         ## cycling through all, get a boolean switch
         case $(cat $ref) in
@@ -304,7 +315,20 @@ set_ctrl_refs() {
   fi
 
   ## switch is found, toggle daemon mode ON
-  test_toggle daemon_mode "Daemon mode"
+  test_toggle daemon_mode 'Daemon mode'
+  echo -e "- Done\n"
+}
+
+# Function for resetting battery stats
+
+reset_stats() {
+  echo -e "- Resetting battery statistics...\n"
+  if (! dumpsys batterysats --reset >/dev/null 2>&1); then
+    if [[ $1 == rm_reset ]]; then
+	  echo -e "- Attention :- Using traditional method\n"
+      rm -f /data/system/batterystats.bin
+	fi
+  fi
   echo -e "- Done\n"
 }
 
@@ -313,26 +337,28 @@ set_ctrl_refs() {
 charge() {
   turn_1=OFF; turn_2=ON;
   text=disabled; test='is_charging';
-  if [[ $1 = enable ]]; then
+  if [[ $1 == enable ]]; then
     turn_1=ON; turn_2=OFF;
     text=enabled; test='! is_charging';
+    if (is_charging); then switch_ OFF; fi
   fi
   if [[ ! -z $2 ]]; then
     if (echo $2 | grep -Eq ^[0-9]+%$); then
       level=$(echo $2 | tr -d %)
-      if [[ $level -le 0 || $level -ge 100 ]]; then
-        abort 'Please give a level between 0 - 100'
-      fi
+      test_bound $level
       charge_acts
       echo -e "- Charging $text until $2...\n"
-      while [[ $(batt_level) -ne $level ]]; do
-        sleep 10
+      until [[ $(batt_level) -eq $level ]]; do
+        test_switch; sleep 10;
       done
       switch_ $turn_2
     elif (echo $2 | grep -Eq ^[0-9]+[smh]?$); then
       charge_acts
       echo -e "- Charging $text for $2...\n"
-      sleep $2
+      setsid sleep $2
+      while (ps | grep -v ' grep ' | grep -q " sleep $2"); do
+        test_switch; sleep 10;
+      done
       switch_ $turn_2
     else
       abort 'Please give a valid argument'
@@ -355,12 +381,12 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $cache_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode = 201801251\n\n" >>$ver_log
+  echo -e "\n\nversionCode == 201802091\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
 # Set sysfs references unless done
-if [[ $(uevent_f) = dummy_Path ]]; then
+if [[ $(uevent_f) == dummy_Path ]]; then
   case $1 in
     --help            )               ;;
     --reconf          )               ;;
@@ -376,14 +402,16 @@ if [[ $(uevent_f) = dummy_Path ]]; then
     --enable|--disable) set_ctrl_refs ;;
     --default         ) set_ctrl_refs ;;
     --shut            ) set_ctrl_refs ;;
-    --reset           ) set_ctrl_refs ;;
+    --set             ) set_ctrl_refs ;;
     --force           ) set_ctrl_refs ;;
     *                 )               ;;
   esac
 fi
 
 # Handle [ --force ]
-if [[ $1 = --force ]]; then force=true; shift; fi
+if [[ $1 == --force ]]; then
+  force=true; shift;
+fi
 
 # Handle given arguments
 case $1 in
@@ -418,6 +446,7 @@ case $1 in
         *              ) echo "$line" ;;
       esac
     done <$mod_dir/docs/README.md
+    exit 1
   ;;
 
 ## re-test and configure sysfs references
@@ -425,12 +454,7 @@ case $1 in
   ;;
 
 ## reset battery stats
-  --statreset)
-    echo -e "- Resetting battery statistics...\n"
-    if (! dumpsys batterysats --reset >/dev/null 2>&1); then
-      rm -f /data/system/batterystats.bin
-    fi
-    echo -e "- Done\n"
+  --statreset) reset_stats rm_reset
   ;;
 
 ## toggle daemon mode
@@ -458,15 +482,26 @@ case $1 in
       ## automatic power-off
       if ($(auto_shut)); then
         if [[ $(batt_level) -le $(shut_threshold) ]]; then
-          if (! is_charging); then poweroff; fi
+          if (! is_charging); then
+            reset_stats rm_reset; poweroff;
+          fi
         fi
       fi
 
       ## daemon mode
       if ($(daemon_mode)); then
         if [[ $(batt_level) -ge $(up_threshold) ]]; then
-          if (is_charging); then switch_ OFF; fi
+          if (is_charging); then
+            switch_ OFF; unset no_ckcurrent;
+          fi
         elif [[ $(batt_level) -le $(down_threshold) ]]; then
+          if (is_charging); then
+            if [[ ! $no_ckcurrent && $(get_prop POWER_SUPPLY_CURRENT_NOW $(uevent_f)) -gt 0 ]]; then
+              switch_ OFF
+            else
+              no_ckcurrent=true
+            fi
+          fi
           if (! is_charging); then switch_ ON; fi
         fi
       fi
@@ -490,9 +525,7 @@ case $1 in
           if [[ ! $force ]]; then
             abort 'Please give a level between 5 - 20'
           fi
-          if [[ $2 -le 0 || $2 -ge 100 ]]; then
-            abort 'Please give a level between 0 - 100'
-          fi
+          test_bound $2
         fi
       else
         abort 'Please give only numbers'
@@ -506,7 +539,7 @@ case $1 in
   ;;
 
 ## update daemon mode thresholds
-  --reset)
+  --set)
     if [[ ! -z $3 ]]; then
       test_level $3; test_level $2;
       if [[ $3 -gt $2 ]]; then
@@ -528,6 +561,7 @@ case $1 in
   *)
     echo -e "- Heyyo fella,\n"
     echo -e "-- Please run \"mcc --help\" for help\n"
+    exit 1
   ;;
 esac
 exit 0
