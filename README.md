@@ -1,5 +1,5 @@
 ###### MC's Charging Controller
-###### mcc README ( 201802093 )
+###### mcc README ( 201802094 )
 ###### MCMotherEffin' @ XDA Developers
 
 
@@ -70,6 +70,10 @@
         :- Toggle automatic power-off ON / OFF
         :---  Default  :- ON
 
+    [ --ckservice ]
+        :- Check whether mcc Service is running
+        :---  If not, fork a new process for it
+
     [ --default ]
         :- Reset all thresholds to defaults
 
@@ -86,15 +90,10 @@
         :- Show this help message
 
 
-##### mcc-check
-
-        :- Check whether mcc Service is running
-        :---  If not, fork a new process for it
-
-
 ### Notes
 
 * Device must be charging while installing / [ --reconf ]
+* You should press enter after forking service
 * 85 70 for daemon and 20 for shut is optimal balance between battery lifespan and available capacity
 * [ --statreset ] might not work on some ROMs
 * It re-installs busybox to /cache/mcc_busybox ( about 1MB )
@@ -103,6 +102,10 @@
 
 
 ### Changelog
+
+##### Jalebis
+
+* Moved mcc-check command to mcc as [ --ckservice ]
 
 ##### Imerty MR
 

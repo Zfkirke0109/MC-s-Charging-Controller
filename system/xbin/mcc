@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Main Script ( 201802093 )
+# mcc Main Script ( 201802094 )
 # MCMotherEffin' @ XDA Developers
 
 # Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
@@ -144,7 +144,7 @@ switch_() {
         get_prop switch_$i | awk '{print $3}' >$switch
       ;;
     esac
-	reset_stats >/dev/null
+    reset_stats >/dev/null
   done
 }
 
@@ -324,10 +324,10 @@ set_ctrl_refs() {
 reset_stats() {
   echo -e "- Resetting battery statistics...\n"
   if (! dumpsys batterysats --reset >/dev/null 2>&1); then
-    if [[ $1 == rm_reset ]]; then
-	  echo -e "- Attention :- Using traditional method\n"
+    if [[ $1 == rm ]]; then
+      echo -e "- Attention :- Using traditional method\n"
       rm -f /data/system/batterystats.bin
-	fi
+    fi
   fi
   echo -e "- Done\n"
 }
@@ -356,7 +356,7 @@ charge() {
       charge_acts
       echo -e "- Charging $text for $2...\n"
       setsid sleep $2
-      while (ps | grep -v ' grep ' | grep -q " sleep $2"); do
+      while (ps | grep -v ' grep ' | grep -q " sleep $2$"); do
         test_switch; sleep 10;
       done
       switch_ $turn_2
@@ -381,7 +381,7 @@ if [[ ! $no_logging ]]; then
     mv -f $ver_log $cache_dir/verbose_last.log
   fi
   getprop | grep product | tr -d [ | tr -d ] >$ver_log
-  echo -e "\n\nversionCode == 201802093\n\n" >>$ver_log
+  echo -e "\n\nversionCode == 201802094\n\n" >>$ver_log
   set -x 2>>$ver_log
 fi
 
@@ -400,6 +400,7 @@ if [[ $(uevent_f) == dummy_Path ]]; then
                         fi            ;;
     --info            ) set_ctrl_refs ;;
     --enable|--disable) set_ctrl_refs ;;
+    --ckservice       ) set_ctrl_refs ;;
     --default         ) set_ctrl_refs ;;
     --shut            ) set_ctrl_refs ;;
     --set             ) set_ctrl_refs ;;
@@ -454,7 +455,7 @@ case $1 in
   ;;
 
 ## reset battery stats
-  --statreset) reset_stats rm_reset
+  --statreset) reset_stats rm
   ;;
 
 ## toggle daemon mode
@@ -475,6 +476,18 @@ case $1 in
   --disable) charge disable $2
   ;;
 
+## test if the service is running
+## if not, fork a new process for it
+  --ckservice)
+    if (! ps | grep -v ' grep ' | grep ' root ' | grep ' {mcc} ' | grep -q ' --start-service$'); then
+      echo -e "mcc Service is not running, forking it...\n"
+      ( (no_logging=true mcc --start-service) & )
+      echo -e "It's running now\n"
+    else
+      echo -e "mcc Service is already running\n"
+    fi
+  ;;
+
 ## start service ( Magisk )
   --start-service)
     while(:); do
@@ -483,7 +496,7 @@ case $1 in
       if ($(auto_shut)); then
         if [[ $(batt_level) -le $(shut_threshold) ]]; then
           if (! is_charging); then
-            reset_stats rm_reset; poweroff;
+            reset_stats rm; poweroff;
           fi
         fi
       fi

@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # MC's Charging Controller
-# mcc Service ( 201802093 )
+# mcc Service ( 201802094 )
 # MCMotherEffin' @ XDA Developers
 
 # Copyright (c) 2018 Jaymin " MCMotherEffin' " Suthar
@@ -16,4 +16,4 @@ for i in 1 2 3 4; do
 done
 
 # Start the service minding [ --autoshut ]
-(sleep 120; no_logging=true mcc --start-service;) &
+( (sleep 120; no_logging=true mcc --start-service;) & )
